@@ -11,6 +11,9 @@ from gilttpy.engineering.archival_readiness import (
 from gilttpy.engineering.release_metadata import (
     assert_no_public_citation_with_placeholders,
 )
+from gilttpy.validation.archival_readiness_campaign import (
+    qa058_archival_readiness_evidence,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_AUTHORS = [
@@ -118,3 +121,25 @@ def test_step_f6_04_active_cff_does_not_falsely_resolve_doi_archival_role():
     blockers = public_release_blockers(m.values())
     assert "citation_doi_metadata" in blockers
     assert "external_ci_matrix" in blockers
+
+
+def test_step_f6_05_remaining_release_blockers_are_semantic_not_count_based():
+    blockers = set(public_release_blockers(audit_archival_readiness(ROOT)))
+    assert blockers == {
+        "canonical_data_release",
+        "citation_doi_metadata",
+        "cross_platform_hermetic_lock",
+        "data_rights_provenance",
+        "external_ci_matrix",
+        "manuscript_output_reproduction",
+        "scientific_config_coverage",
+        "zenodo_archival_record",
+    }
+
+
+def test_step_f6_06_campaign_counts_are_internally_consistent_after_f6_promotion():
+    ev = qa058_archival_readiness_evidence(ROOT)
+    assert ev["role_count"] == 18
+    assert ev["ready_role_count"] + ev["hold_role_count"] == ev["role_count"]
+    assert ev["hold_role_count"] > 0
+    assert ev["archival_release_ready"] is False

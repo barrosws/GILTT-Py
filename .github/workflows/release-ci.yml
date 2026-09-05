@@ -169,6 +169,8 @@ jobs:
             --deselect=02_TESTS/test_qa055_clean_room_release_reproducibility.py::test_qa055_11_unresolved_qa054_metadata_still_blocks_public_release \
             --deselect=02_TESTS/test_qa056_documentation_provenance.py::test_qa056_07_citation_and_license_remain_qa054_holds_not_fabricated \
             --deselect=02_TESTS/test_release_readiness_qa058.py::test_qa058_05_public_version_authorship_license_and_citation_remain_hold \
+            --deselect=02_TESTS/test_release_readiness_qa058.py::test_qa058_08_audit_pass_does_not_mean_archival_release_ready \
+            --deselect=02_TESTS/test_release_readiness_qa058.py::test_qa058_10_campaign_reports_ready_and_hold_roles_without_promotion \
             --deselect=03_RELEASE_TESTS/test_step_f2_release_metadata.py::test_authorship_orcid_and_doi_are_not_inferred
       - name: Record environment
         run: python -m pip freeze

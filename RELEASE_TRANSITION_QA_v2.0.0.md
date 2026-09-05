@@ -74,3 +74,34 @@ back into the release commit, avoiding recursive commit/run invalidation.
 These corrections are release-governance and packaging hardening only. They do
 not alter scientific source equations, physical closures, numerical tolerances,
 benchmark targets, QA043/QA044 policies, uncertainty design, or claim envelopes.
+
+
+## STEP F6C2 readiness-count transition
+
+The F6C1 hardening correctly promoted reviewed public version, software
+authorship/ORCID policy, and software license from HOLD to READY. This reduced
+the number of unresolved archival roles by design.
+
+Two frozen QA-058 assertions use pre-F6 numeric lower bounds on the number of
+HOLD roles/blockers:
+
+1. `test_qa058_08_audit_pass_does_not_mean_archival_release_ready`
+2. `test_qa058_10_campaign_reports_ready_and_hold_roles_without_promotion`
+
+Their qualitative conclusions remain valid, but their historical numeric bounds
+(`>=10`) are no longer valid after explicit F6 decisions. They remain unchanged
+as provenance and are deselected in release CI.
+
+Two STEP F6 replacement tests verify the current state semantically instead of
+forcing obsolete counts:
+
+- the exact eight unresolved required archival blockers are identified by role;
+- QA-058 campaign ready/HOLD counts are internally consistent, at least one HOLD
+  remains, and `archival_release_ready` remains false.
+
+The release-transition suite remains exactly 396 selected tests:
+410 collected, 14 historical/runtime-local assertions deselected.
+
+No scientific source, numerical tolerance, benchmark, physical closure,
+metadata value, author order, license, CFF content, sdist policy, or wheel
+metadata policy is changed by this transition.
