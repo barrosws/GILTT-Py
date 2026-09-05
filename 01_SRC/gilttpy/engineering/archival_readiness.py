@@ -111,7 +111,35 @@ def audit_archival_readiness(project_root: str | Path) -> tuple[ArchivalEvidence
         if f6_state_path.exists()
         else {}
     )
-    version_doi=f6_state.get("zenodo_version_doi")
+    f10_state_path=root/"metadata/step_f10a_post_zenodo_state.json"
+    f10_state=(
+        json.loads(f10_state_path.read_text(encoding="utf-8"))
+        if f10_state_path.exists()
+        else {}
+    )
+    version_doi=f10_state.get("zenodo_version_doi") or f6_state.get("zenodo_version_doi")
+    concept_doi=f10_state.get("zenodo_concept_doi") or f6_state.get("zenodo_concept_doi")
+    release_date=f10_state.get("release_date") or f6_state.get("release_date")
+    zenodo_record_url=f10_state.get("zenodo_record_url")
+    zenodo_source_archive=f10_state.get("source_archive", {})
+    cff_text=(root/"CITATION.cff").read_text(encoding="utf-8") if final_cff else ""
+    citation_metadata_ready=(
+        final_cff
+        and bool(version_doi)
+        and bool(release_date)
+        and f'doi: "{version_doi}"' in cff_text
+        and f'date-released: "{release_date}"' in cff_text
+    )
+    zenodo_archival_ready=(
+        bool(version_doi)
+        and bool(concept_doi)
+        and bool(zenodo_record_url)
+        and bool(zenodo_source_archive.get("name"))
+        and int(zenodo_source_archive.get("size_bytes", 0)) > 0
+        and bool(zenodo_source_archive.get("md5"))
+        and bool(zenodo_source_archive.get("canonical_local_sha256"))
+        and f10_state.get("software_license_spdx") == "BSD-3-Clause"
+    )
     with (root/"pyproject.toml").open("rb") as f:
         project=tomllib.load(f)["project"]
     project_authors=[str(a.get("name","")) for a in project.get("authors",[])]
@@ -178,20 +206,19 @@ def audit_archival_readiness(project_root: str | Path) -> tuple[ArchivalEvidence
         ),
         ArchivalEvidence(
             "citation_doi_metadata",
-            ReadinessStatus.READY if final_cff and version_doi else ReadinessStatus.HOLD,
+            ReadinessStatus.READY if citation_metadata_ready else ReadinessStatus.HOLD,
             tuple(
                 x for x in (
                     "CITATION.cff" if final_cff else "CITATION.cff.template",
                     "metadata/step_f6_public_metadata_state.json" if f6_state_path.exists() else None,
+                    "metadata/step_f10a_post_zenodo_state.json" if f10_state_path.exists() else None,
                 )
                 if x is not None and has(x)
             ),
             (
-                "Active CFF and version DOI are present."
-                if final_cff and version_doi
-                else "Active CFF is present but DOI remains unresolved; citation/DOI role stays HOLD."
-                if final_cff
-                else "Only a template exists; DOI and final citation metadata remain HOLD."
+                "Active CFF contains the externally issued Zenodo version DOI and release date recorded by F10A."
+                if citation_metadata_ready
+                else "Citation DOI/date evidence is incomplete or inconsistent across active CFF and post-Zenodo state."
             ),
         ),
         ArchivalEvidence("canonical_data_release", ReadinessStatus.HOLD, (), "No canonical public data release is frozen by QA058."),
@@ -206,7 +233,16 @@ def audit_archival_readiness(project_root: str | Path) -> tuple[ArchivalEvidence
             "Repository-local readiness does not self-certify external CI; exact release-SHA CI evidence must be established by external readback before tag.",
         ),
         ArchivalEvidence("cross_platform_hermetic_lock", ReadinessStatus.HOLD, (), "Local dependency resolution is not a universal cross-platform hermetic lock."),
-        ArchivalEvidence("zenodo_archival_record", ReadinessStatus.HOLD, (), "Zenodo deposition is downstream of final release audit and metadata decisions."),
+        ArchivalEvidence(
+            "zenodo_archival_record",
+            ReadinessStatus.READY if zenodo_archival_ready else ReadinessStatus.HOLD,
+            ("metadata/step_f10a_post_zenodo_state.json",) if f10_state_path.exists() else (),
+            (
+                "Zenodo version/concept DOI and archived source-package integrity evidence are recorded by F10A."
+                if zenodo_archival_ready
+                else "Zenodo archival-record evidence is incomplete or inconsistent."
+            ),
+        ),
     )
 
 def evidence_map(items: Iterable[ArchivalEvidence]) -> dict[str, ArchivalEvidence]:

@@ -79,8 +79,8 @@ def test_step_f6_02_active_citation_is_placeholder_free_and_consistent():
     ):
         assert name in text
     assert "orcid:" not in text.lower()
-    assert "\ndoi:" not in text.lower()
-    assert "date-released:" not in text.lower()
+    assert 'doi: "10.5281/zenodo.22379576"' in text
+    assert 'date-released: "2026-09-05"' in text
     assert not any(x in text for x in ("TO_REVIEW", "TO_SELECT", "TO_RELEASE"))
 
     manifest = (ROOT / "MANIFEST.in").read_text(encoding="utf-8")
@@ -108,18 +108,27 @@ def test_step_f6_03_release_state_records_real_evidence_without_identifier_infer
     assert state["zenodo_version_doi"] is None
     assert state["zenodo_concept_doi"] is None
     assert state["release_date"] is None
+    f10 = json.loads(
+        (ROOT / "metadata/step_f10a_post_zenodo_state.json").read_text(encoding="utf-8")
+    )
+    assert f10["zenodo_version_doi"] == "10.5281/zenodo.22379576"
+    assert f10["zenodo_concept_doi"] == "10.5281/zenodo.22379575"
+    assert f10["release_date"] == "2026-09-05"
+    assert f10["release_commit"] == "08e24ddc334f50eb86f48ddb8a76534a3ed71478"
 
 
-def test_step_f6_04_active_cff_does_not_falsely_resolve_doi_archival_role():
+def test_step_f10a_04_active_cff_resolves_doi_and_zenodo_archival_roles():
     m = evidence_map(audit_archival_readiness(ROOT))
     assert m["public_software_version"].status is ReadinessStatus.READY
     assert m["software_authorship_orcids"].status is ReadinessStatus.READY
     assert m["software_license"].status is ReadinessStatus.READY
-    assert m["citation_doi_metadata"].status is ReadinessStatus.HOLD
+    assert m["citation_doi_metadata"].status is ReadinessStatus.READY
+    assert m["zenodo_archival_record"].status is ReadinessStatus.READY
     assert m["external_ci_matrix"].status is ReadinessStatus.HOLD
     assert "CITATION.cff" in m["citation_doi_metadata"].paths
     blockers = public_release_blockers(m.values())
-    assert "citation_doi_metadata" in blockers
+    assert "citation_doi_metadata" not in blockers
+    assert "zenodo_archival_record" not in blockers
     assert "external_ci_matrix" in blockers
 
 
@@ -127,13 +136,11 @@ def test_step_f6_05_remaining_release_blockers_are_semantic_not_count_based():
     blockers = set(public_release_blockers(audit_archival_readiness(ROOT)))
     assert blockers == {
         "canonical_data_release",
-        "citation_doi_metadata",
         "cross_platform_hermetic_lock",
         "data_rights_provenance",
         "external_ci_matrix",
         "manuscript_output_reproduction",
         "scientific_config_coverage",
-        "zenodo_archival_record",
     }
 
 

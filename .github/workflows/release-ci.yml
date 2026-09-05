@@ -50,8 +50,8 @@ jobs:
           assert data["version"] == "2.0.0"
           assert data["type"] == "software"
           assert data["license"] == "BSD-3-Clause"
-          assert "doi" not in data
-          assert "date-released" not in data
+          assert data["doi"] == "10.5281/zenodo.22379576"
+          assert data["date-released"] == "2026-09-05"
           assert all("orcid" not in author for author in data["authors"])
           text = Path("CITATION.cff").read_text(encoding="utf-8")
           assert not any(x in text for x in ("TO_REVIEW", "TO_SELECT", "TO_RELEASE"))

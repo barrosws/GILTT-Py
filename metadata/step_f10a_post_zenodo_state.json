@@ -1,0 +1,26 @@
+{
+  "citation_orcid_policy": "UNCHANGED_FROM_F6; F10A DOES NOT ADD ORCID VALUES TO CITATION.cff",
+  "creator_name_normalization": "CONTROLLED_NONBLOCKING",
+  "f9d_gate": "PASS_STEP_F9D_ZENODO_PUBLICATION_DOI_LICENSE_AND_FILE_INTEGRITY_WITH_CONTROLLED_CREATOR_NAME_NORMALIZATION_v1.0",
+  "gate": "STEP_F10A_POST_ZENODO_CITATION_METADATA_PATCH",
+  "github_release_url": "https://github.com/barrosws/GILTT-Py/releases/tag/v2.0.0",
+  "github_repository_url": "https://github.com/barrosws/GILTT-Py",
+  "historical_f6_state_policy": "IMMUTABLE; step_f6_public_metadata_state.json MUST retain DOI/date nulls because they were unresolved at F6",
+  "release_commit": "08e24ddc334f50eb86f48ddb8a76534a3ed71478",
+  "release_date": "2026-09-05",
+  "release_tag": "v2.0.0",
+  "release_version": "2.0.0",
+  "software_license_spdx": "BSD-3-Clause",
+  "source_archive": {
+    "canonical_local_sha256": "6d3e1191880fd06bc7628ec5fbbe6da0e57f7d3a48e4e75ea225cf404e59ab2f",
+    "md5": "61bb8a95e7170e92b8a310bb4cd25889",
+    "name": "GILTT-Py-2.0.0-source.zip",
+    "size_bytes": 354053
+  },
+  "status": "PATCH_PREPARED_PENDING_BRANCH_CI",
+  "zenodo_concept_doi": "10.5281/zenodo.22379575",
+  "zenodo_concept_record_id": 22379575,
+  "zenodo_record_id": 22379576,
+  "zenodo_record_url": "https://zenodo.org/records/22379576",
+  "zenodo_version_doi": "10.5281/zenodo.22379576"
+}

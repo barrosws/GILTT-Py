@@ -3,6 +3,8 @@ message: "If you use GILTT-Py 2.0 in your work, please cite the software using t
 title: "GILTT-Py 2.0"
 type: software
 version: 2.0.0
+doi: "10.5281/zenodo.22379576"
+date-released: "2026-09-05"
 authors:
   - family-names: "Braga Ribes"
     given-names: "Jorge Luís"

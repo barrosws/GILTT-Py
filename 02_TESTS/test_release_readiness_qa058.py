@@ -42,10 +42,11 @@ def test_qa058_06_data_scientific_config_and_manuscript_provenance_remain_hold()
     for key in ('canonical_data_release','data_rights_provenance','scientific_config_coverage','manuscript_output_reproduction'):
         assert m[key].status is ReadinessStatus.HOLD
 
-def test_qa058_07_full_coverage_external_ci_lock_and_zenodo_remain_hold():
+def test_f10a_qa058_07_zenodo_is_ready_while_remaining_engineering_roles_stay_hold():
     m=evidence_map(audit_archival_readiness(ROOT))
-    for key in ('full_package_coverage','external_ci_matrix','cross_platform_hermetic_lock','zenodo_archival_record'):
+    for key in ('full_package_coverage','external_ci_matrix','cross_platform_hermetic_lock'):
         assert m[key].status is ReadinessStatus.HOLD
+    assert m['zenodo_archival_record'].status is ReadinessStatus.READY
 
 def test_qa058_08_audit_pass_does_not_mean_archival_release_ready():
     items=audit_archival_readiness(ROOT)
