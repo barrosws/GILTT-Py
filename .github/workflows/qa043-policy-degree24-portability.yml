@@ -1,0 +1,151 @@
+name: qa043-policy-degree24-portability
+
+on:
+  push:
+    branches:
+      - step-f5c-qa043-policy-degree24-portability
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    name: QA043 policy degree24 / ${{ matrix.os }} / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ${{ matrix.os }}
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Build and install branch wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build pytest threadpoolctl
+          python -m build --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install",
+              "--force-reinstall", str(wheels[0])
+          ])
+          PY
+
+      - name: Compare QA044 policy degree24 with QA043 degree28
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import platform
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("02_TESTS").resolve()))
+
+          import mpmath
+          import numpy as np
+          import scipy
+          import threadpoolctl
+
+          from test_qa043_transient_variable_coefficient_benchmark import _exact_spectral
+          from gilttpy.validation.transient_variable_coefficient import (
+              spectral_dehoog_concentration_from_inlet,
+          )
+
+          c, system, y0 = _exact_spectral()
+          x = 4.0
+          z = 3.0
+          times = (2.1, 2.2, 2.3, 2.75, 3.0, 5.0)
+
+          def evaluate(degree):
+              rows = []
+              for t in times:
+                  got = spectral_dehoog_concentration_from_inlet(
+                      system, y0, x, z, t, degree=degree, working_dps=40
+                  )
+                  ref = float(c.exact_concentration(x, [z], t)[0])
+                  rows.append({
+                      "t": t,
+                      "got": float(got),
+                      "reference": ref,
+                      "relative_error": float(abs(got-ref)/ref),
+                  })
+              e = [r["relative_error"] for r in rows]
+              checks = {
+                  "e_t2_1_lt_2e-4": e[0] < 2e-4,
+                  "e_t2_2_lt_1e-5": e[1] < 1e-5,
+                  "e_t2_3_lt_1e-6": e[2] < 1e-6,
+                  "max_far_lt_1e-8": max(e[3:]) < 1e-8,
+                  "near_front_monotone": e[2] < e[1] < e[0],
+              }
+              return {
+                  "degree": degree,
+                  "working_dps": 40,
+                  "rows": rows,
+                  "max_far_error": max(e[3:]),
+                  "checks": checks,
+                  "all_checks_pass": all(checks.values()),
+              }
+
+          payload = {
+              "schema": "gilttpy.step-f5c.qa043-policy-degree24-portability.v1",
+              "platform": platform.platform(),
+              "machine": platform.machine(),
+              "python": platform.python_version(),
+              "versions": {
+                  "numpy": np.__version__,
+                  "scipy": scipy.__version__,
+                  "mpmath": mpmath.__version__,
+                  "threadpoolctl": threadpoolctl.__version__,
+              },
+              "threadpools": threadpoolctl.threadpool_info(),
+              "degree24_policy": evaluate(24),
+              "degree28_qa043_current": evaluate(28),
+          }
+
+          safe_os = platform.system().lower()
+          safe_py = f"{sys.version_info.major}{sys.version_info.minor}"
+          out = Path(f"step_f5c_{safe_os}_py{safe_py}.json")
+          out.write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(payload, indent=2, sort_keys=True))
+
+          if not payload["degree24_policy"]["all_checks_pass"]:
+              raise SystemExit("QA044 policy degree=24 did not satisfy QA043 frozen numerical envelope")
+          PY
+
+      - name: Run QA044 policy tests
+        shell: bash
+        run: |
+          python -m pytest \
+            02_TESTS/test_qa044_transient_multi_regime_inverse_laplace_robustness.py \
+            -q -ra
+
+      - name: Upload cell evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step-f5c-${{ matrix.os }}-py${{ matrix.python }}
+          path: step_f5c_*.json
+          if-no-files-found: warn
