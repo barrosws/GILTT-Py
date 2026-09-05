@@ -36,7 +36,7 @@ jobs:
       - name: Build and install branch wheel
         shell: bash
         run: |
-          python -m pip install --upgrade pip build threadpoolctl
+          python -m pip install --upgrade pip build pytest threadpoolctl
           python -m build --wheel
           python - <<'PY'
           from pathlib import Path
