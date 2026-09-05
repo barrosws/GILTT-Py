@@ -1,0 +1,196 @@
+name: qa043-degree-median-12-cell-confirmation
+
+on:
+  push:
+    branches:
+      - step-f5h-degree-median-12-cell
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    name: degree-median QA043 / ${{ matrix.os }} / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ${{ matrix.os }}
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Build and install branch wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build pytest threadpoolctl
+          python -m build --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install",
+              "--force-reinstall", str(wheels[0]),
+          ])
+          PY
+
+      - name: Confirm preregistered degree-median estimator
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import platform
+          import sys
+          import time
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("02_TESTS").resolve()))
+
+          import mpmath
+          import numpy as np
+          import scipy
+          import threadpoolctl
+
+          from test_qa043_transient_variable_coefficient_benchmark import _exact_spectral
+          from gilttpy.validation.transient_variable_coefficient import (
+              spectral_dehoog_concentration_from_inlet,
+          )
+
+          c, system, y0 = _exact_spectral()
+          x = 4.0
+          z = 3.0
+          times = (2.1, 2.2, 2.3, 2.75, 3.0, 5.0)
+          degrees = (24, 26, 28)
+          working_dps = 40
+
+          def envelope(errors):
+              return {
+                  "e_t2_1_lt_2e-4": errors[0] < 2e-4,
+                  "e_t2_2_lt_1e-5": errors[1] < 1e-5,
+                  "e_t2_3_lt_1e-6": errors[2] < 1e-6,
+                  "max_far_lt_1e-8": max(errors[3:]) < 1e-8,
+                  "near_front_monotone": errors[2] < errors[1] < errors[0],
+              }
+
+          # Current degree-28 control.
+          t0 = time.perf_counter()
+          control_rows = []
+          for t in times:
+              ref = float(c.exact_concentration(x, [z], t)[0])
+              got = spectral_dehoog_concentration_from_inlet(
+                  system, y0, x, z, t,
+                  degree=28, working_dps=working_dps,
+              )
+              control_rows.append({
+                  "t": t, "got": float(got), "reference": ref,
+                  "relative_error": float(abs(got-ref)/ref),
+              })
+          control_seconds = time.perf_counter() - t0
+          control_errors = [r["relative_error"] for r in control_rows]
+          control_checks = envelope(control_errors)
+
+          # Preregistered target-free robust consensus:
+          # median of independent de Hoog estimates at adjacent degrees 24,26,28.
+          t1 = time.perf_counter()
+          candidate_rows = []
+          for t in times:
+              ref = float(c.exact_concentration(x, [z], t)[0])
+              estimates = [
+                  float(spectral_dehoog_concentration_from_inlet(
+                      system, y0, x, z, t,
+                      degree=degree, working_dps=working_dps,
+                  ))
+                  for degree in degrees
+              ]
+              got = float(np.median(np.asarray(estimates, dtype=np.float64)))
+              candidate_rows.append({
+                  "t": t,
+                  "degree_estimates": dict(zip(map(str, degrees), estimates)),
+                  "got": got,
+                  "reference": ref,
+                  "relative_error": float(abs(got-ref)/ref),
+                  "spread_max_minus_min": float(max(estimates)-min(estimates)),
+              })
+          candidate_seconds = time.perf_counter() - t1
+          candidate_errors = [r["relative_error"] for r in candidate_rows]
+          candidate_checks = envelope(candidate_errors)
+
+          payload = {
+              "schema": "gilttpy.step-f5h.degree-median-12-cell-confirmation.v1",
+              "platform": platform.platform(),
+              "machine": platform.machine(),
+              "python": platform.python_version(),
+              "versions": {
+                  "numpy": np.__version__,
+                  "scipy": scipy.__version__,
+                  "mpmath": mpmath.__version__,
+                  "threadpoolctl": threadpoolctl.__version__,
+              },
+              "threadpools": threadpoolctl.threadpool_info(),
+              "control_degree28": {
+                  "rows": control_rows,
+                  "checks": control_checks,
+                  "all_checks_pass": all(control_checks.values()),
+                  "max_far_error": max(control_errors[3:]),
+                  "wall_seconds": control_seconds,
+              },
+              "candidate_median_24_26_28": {
+                  "definition": "median of de Hoog concentration estimates at degrees 24,26,28; no reference value is used in candidate construction",
+                  "rows": candidate_rows,
+                  "checks": candidate_checks,
+                  "all_checks_pass": all(candidate_checks.values()),
+                  "max_far_error": max(candidate_errors[3:]),
+                  "wall_seconds": candidate_seconds,
+              },
+              "candidate_to_control_wall_time_ratio":
+                  candidate_seconds/control_seconds if control_seconds > 0 else None,
+          }
+
+          safe_os = platform.system().lower()
+          safe_py = f"{sys.version_info.major}{sys.version_info.minor}"
+          Path(f"step_f5h_{safe_os}_py{safe_py}.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          print(json.dumps({
+              "platform": payload["platform"],
+              "python": payload["python"],
+              "control_pass": payload["control_degree28"]["all_checks_pass"],
+              "candidate_pass":
+                  payload["candidate_median_24_26_28"]["all_checks_pass"],
+              "candidate_max_far_error":
+                  payload["candidate_median_24_26_28"]["max_far_error"],
+              "candidate_to_control_wall_time_ratio":
+                  payload["candidate_to_control_wall_time_ratio"],
+          }, indent=2, sort_keys=True))
+
+          if not payload["candidate_median_24_26_28"]["all_checks_pass"]:
+              raise SystemExit(
+                  "preregistered median(24,26,28) failed frozen QA043 envelope"
+              )
+          PY
+
+      - name: Upload STEP F5H evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step-f5h-${{ matrix.os }}-py${{ matrix.python }}
+          path: step_f5h_*.json
+          if-no-files-found: error
