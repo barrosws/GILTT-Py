@@ -106,7 +106,11 @@ def audit_archival_readiness(project_root: str | Path) -> tuple[ArchivalEvidence
     version=_project_version(root)
     coverage=has("coverage/qa057_coverage.json")
     f6_state_path=root/"metadata/step_f6_public_metadata_state.json"
-    f6_state=json.loads(f6_state_path.read_text()) if f6_state_path.exists() else {}
+    f6_state=(
+        json.loads(f6_state_path.read_text(encoding="utf-8"))
+        if f6_state_path.exists()
+        else {}
+    )
     version_doi=f6_state.get("zenodo_version_doi")
     return (
         ArchivalEvidence("distribution_reproducibility", ReadinessStatus.READY if qa057_build else ReadinessStatus.HOLD, ("QA057_BUILD_REPRODUCIBILITY.json",) if qa057_build else (), "QA057 deterministic distribution evidence is frozen locally."),

@@ -29,7 +29,11 @@ def _project():
 
 
 def _f6_state():
-    return json.loads((ROOT / "metadata/step_f6_public_metadata_state.json").read_text())
+    return json.loads(
+        (ROOT / "metadata/step_f6_public_metadata_state.json").read_text(
+            encoding="utf-8"
+        )
+    )
 
 
 def test_step_f6_01_reviewed_software_authorship_is_explicit_not_inferred():
@@ -40,7 +44,11 @@ def test_step_f6_01_reviewed_software_authorship_is_explicit_not_inferred():
     assert state["software_authorship_reviewed"] is True
 
     # Historical F2 provenance remains untouched: authorship was not inferred there.
-    f2 = json.loads((ROOT / "metadata/step_f2_release_state.json").read_text())
+    f2 = json.loads(
+        (ROOT / "metadata/step_f2_release_state.json").read_text(
+            encoding="utf-8"
+        )
+    )
     assert f2["software_authorship"] is None
     assert f2["author_orcids"] is None
 
