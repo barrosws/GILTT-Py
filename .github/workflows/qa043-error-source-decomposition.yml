@@ -1,0 +1,237 @@
+name: qa043-error-source-decomposition
+
+on:
+  push:
+    branches:
+      - step-f5b-qa043-error-source-decomposition
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decompose:
+    name: QA043 error-source decomposition / exact QA051 stack
+    runs-on: ubuntu-24.04
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up exact Python 3.13.5
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13.5"
+          cache: pip
+
+      - name: Install exact QA051 stack and branch wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel
+          python -m pip install --force-reinstall \
+            "numpy==2.3.5" \
+            "scipy==1.17.0" \
+            "mpmath==1.3.0" \
+            "pytest==9.0.2" \
+            "threadpoolctl==3.6.0"
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install",
+              "--force-reinstall", "--no-deps", str(wheels[0])
+          ])
+          PY
+
+      - name: Verify controlled runtime
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, platform
+          import mpmath, numpy, pytest, scipy, threadpoolctl
+          expected = {
+              "python": "3.13.5",
+              "numpy": "2.3.5",
+              "scipy": "1.17.0",
+              "mpmath": "1.3.0",
+              "pytest": "9.0.2",
+              "threadpoolctl": "3.6.0",
+          }
+          observed = {
+              "python": platform.python_version(),
+              "numpy": numpy.__version__,
+              "scipy": scipy.__version__,
+              "mpmath": mpmath.__version__,
+              "pytest": pytest.__version__,
+              "threadpoolctl": threadpoolctl.__version__,
+          }
+          print(json.dumps({"expected": expected, "observed": observed}, indent=2))
+          if observed != expected:
+              raise SystemExit("controlled runtime mismatch")
+          PY
+
+      - name: Decompose QA043 inversion error
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import math
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("02_TESTS").resolve()))
+
+          from test_qa043_transient_variable_coefficient_benchmark import _exact_spectral
+          from gilttpy.numerics.inverse_laplace_modern import dehoog_inverse_laplace
+          from gilttpy.validation.transient_variable_coefficient import (
+              spectral_laplace_concentration_from_inlet,
+          )
+
+          c, system, y0 = _exact_spectral()
+          x = 4.0
+          z = 3.0
+          times = (2.1, 2.2, 2.3, 2.75, 3.0, 5.0)
+
+          def exact_transform(s):
+              return complex(c.exact_laplace_concentration(x, [z], s)[0])
+
+          def spectral_transform(s):
+              return spectral_laplace_concentration_from_inlet(system, y0, x, z, s)
+
+          baseline = []
+          for t in times:
+              ref = float(c.exact_concentration(x, [z], t)[0])
+              exact_dehoog = dehoog_inverse_laplace(
+                  exact_transform, t, degree=28, working_dps=40
+              )
+              spectral_dehoog = dehoog_inverse_laplace(
+                  spectral_transform, t, degree=28, working_dps=40
+              )
+              baseline.append({
+                  "t": t,
+                  "reference": ref,
+                  "dehoog_exact_transform": exact_dehoog,
+                  "dehoog_spectral_transform": spectral_dehoog,
+                  "exact_transform_relative_error": abs(exact_dehoog-ref)/ref,
+                  "spectral_transform_relative_error": abs(spectral_dehoog-ref)/ref,
+                  "spectral_minus_exact_dehoog_relative_to_ref":
+                      abs(spectral_dehoog-exact_dehoog)/ref,
+              })
+
+          contour_samples = []
+          def instrumented_spectral(s):
+              spec = spectral_transform(s)
+              exact = exact_transform(s)
+              denom = abs(exact)
+              rel = abs(spec-exact)/denom if denom else math.inf
+              contour_samples.append({
+                  "s_real": float(complex(s).real),
+                  "s_imag": float(complex(s).imag),
+                  "spectral_real": float(spec.real),
+                  "spectral_imag": float(spec.imag),
+                  "exact_real": float(exact.real),
+                  "exact_imag": float(exact.imag),
+                  "relative_transform_error": float(rel),
+              })
+              return spec
+
+          t_probe = 5.0
+          probe_value = dehoog_inverse_laplace(
+              instrumented_spectral, t_probe, degree=28, working_dps=40
+          )
+
+          degree_sweep = []
+          for degree in (20, 24, 28, 32, 36, 40, 48):
+              ref = float(c.exact_concentration(x, [z], t_probe)[0])
+              ev = dehoog_inverse_laplace(
+                  exact_transform, t_probe, degree=degree, working_dps=40
+              )
+              sv = dehoog_inverse_laplace(
+                  spectral_transform, t_probe, degree=degree, working_dps=40
+              )
+              degree_sweep.append({
+                  "degree": degree,
+                  "exact_transform_relative_error": abs(ev-ref)/ref,
+                  "spectral_transform_relative_error": abs(sv-ref)/ref,
+                  "spectral_minus_exact_dehoog_relative_to_ref": abs(sv-ev)/ref,
+              })
+
+          dps_sweep = []
+          for dps in (30, 40, 50, 60):
+              ref = float(c.exact_concentration(x, [z], t_probe)[0])
+              ev = dehoog_inverse_laplace(
+                  exact_transform, t_probe, degree=28, working_dps=dps
+              )
+              sv = dehoog_inverse_laplace(
+                  spectral_transform, t_probe, degree=28, working_dps=dps
+              )
+              dps_sweep.append({
+                  "working_dps": dps,
+                  "exact_transform_relative_error": abs(ev-ref)/ref,
+                  "spectral_transform_relative_error": abs(sv-ref)/ref,
+                  "spectral_minus_exact_dehoog_relative_to_ref": abs(sv-ev)/ref,
+              })
+
+          contour_errors = [row["relative_transform_error"] for row in contour_samples]
+          payload = {
+              "schema": "gilttpy.step-f5b.qa043-error-source-decomposition.v1",
+              "controlled_stack": {
+                  "python": "3.13.5",
+                  "numpy": "2.3.5",
+                  "scipy": "1.17.0",
+                  "mpmath": "1.3.0",
+                  "pytest": "9.0.2",
+                  "threadpoolctl": "3.6.0",
+              },
+              "baseline_degree": 28,
+              "baseline_working_dps": 40,
+              "x": x,
+              "z": z,
+              "baseline": baseline,
+              "t_probe": t_probe,
+              "probe_spectral_value": probe_value,
+              "contour_sample_count": len(contour_samples),
+              "contour_relative_transform_error_max": max(contour_errors),
+              "contour_relative_transform_error_mean":
+                  sum(contour_errors)/len(contour_errors),
+              "contour_samples": contour_samples,
+              "degree_sweep": degree_sweep,
+              "working_dps_sweep": dps_sweep,
+              "interpretation_rules": {
+                  "inverse_laplace_dominant":
+                      "exact-transform de Hoog error itself exceeds the frozen QA043 tolerance",
+                  "spectral_evaluation_dominant":
+                      "exact-transform inversion passes while spectral-transform inversion fails",
+                  "mixed":
+                      "both contributions are material at the frozen tolerance",
+              },
+          }
+
+          Path("step_f5b_qa043_error_source_decomposition.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          print(json.dumps({
+              "baseline": baseline,
+              "contour_sample_count": len(contour_samples),
+              "contour_relative_transform_error_max": max(contour_errors),
+              "degree_sweep": degree_sweep,
+              "working_dps_sweep": dps_sweep,
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload STEP F5B evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: step-f5b-qa043-error-source-decomposition
+          path: step_f5b_qa043_error_source_decomposition.json
+          if-no-files-found: error
