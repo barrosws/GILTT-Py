@@ -62,3 +62,20 @@ def test_release_state_does_not_promote_external_platform_evidence():
     assert state['external_ci_complete'] is False
     assert state['zenodo_deposition_complete'] is False
     assert state['status'] == 'PROMOTION_CANDIDATE_EXTERNAL_HOLDS_REMAIN'
+
+
+def test_cross_platform_ci_does_not_promote_local_reference_pins_to_universal_lock():
+    ref=(ROOT/'requirements/qa051_reference_py313_linux_x86_64.txt').read_text()
+    resolution=json.loads((ROOT/'requirements/qa053_local_resolution_py313_linux_x86_64.json').read_text())
+    assert 'NOT A CROSS-PLATFORM LOCK FILE' in ref
+    assert resolution['evidence'] == 'LOCAL_RESOLUTION'
+    assert resolution['hermetic'] is False
+    assert resolution['cross_platform'] is False
+
+
+def test_cross_platform_ci_excludes_only_local_runtime_equality_checks():
+    text=(ROOT/'.github/workflows/release-ci.yml').read_text()
+    assert '--deselect=02_TESTS/test_qa051_environment_ci_matrix.py::test_qa051_06_local_reference_versions_are_explicit_and_match_runtime' in text
+    assert '--deselect=02_TESTS/test_qa053_dependency_lock.py::test_qa053_08_local_resolution_matches_direct_runtime_stack' in text
+    for exact_pin in ('numpy==2.3.5','scipy==1.17.0','mpmath==1.3.0','pytest==9.0.2'):
+        assert exact_pin not in text

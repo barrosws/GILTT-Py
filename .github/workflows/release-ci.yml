@@ -47,6 +47,8 @@ jobs:
         run: |
           python -m pytest 02_TESTS 03_RELEASE_TESTS -ra \
             --deselect=02_TESTS/test_qa050_engineering_reproducibility_baseline.py::test_qa050_02_governed_tree_matches_pyproject \
+            --deselect=02_TESTS/test_qa051_environment_ci_matrix.py::test_qa051_06_local_reference_versions_are_explicit_and_match_runtime \
+            --deselect=02_TESTS/test_qa053_dependency_lock.py::test_qa053_08_local_resolution_matches_direct_runtime_stack \
             --deselect=02_TESTS/test_qa054_release_metadata.py::test_qa054_02_known_project_metadata_matches_pyproject \
             --deselect=02_TESTS/test_qa054_release_metadata.py::test_qa054_06_pyproject_does_not_guess_license \
             --deselect=02_TESTS/test_qa054_release_metadata.py::test_qa054_10_metadata_evidence_reports_hold_not_release_ready \
