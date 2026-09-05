@@ -1,0 +1,30 @@
+{
+  "gate": "STEP_F2_RELEASE_DECISIONS_APPLIED",
+  "status": "PROMOTION_CANDIDATE_EXTERNAL_HOLDS_REMAIN",
+  "release_version": "2.0.0",
+  "git_tag": "v2.0.0",
+  "software_license_spdx": "BSD-3-Clause",
+  "license_notice": "Copyright (c) 2026 GILTT-Py contributors.",
+  "repository_target": "barrosws/GILTT-Py",
+  "repository_created": false,
+  "external_ci_complete": false,
+  "zenodo_deposition_complete": false,
+  "zenodo_version_doi": null,
+  "zenodo_concept_doi": null,
+  "software_authorship": null,
+  "author_orcids": null,
+  "raw_copenhagen_hanford_redistributed": false,
+  "prohibitions": [
+    "NO_GUESSED_SOFTWARE_AUTHORSHIP",
+    "NO_GUESSED_ORCID",
+    "NO_FABRICATED_DOI",
+    "NO_UNVERIFIED_DATA_REDISTRIBUTION",
+    "NO_LOCAL_CI_AS_CROSS_PLATFORM_PROOF"
+  ],
+  "release_transition_suite": {
+    "inherited_tests": 396,
+    "historical_state_assertions_deselected": 6,
+    "step_f2_tests_added": 6,
+    "release_suite_total": 396
+  }
+}

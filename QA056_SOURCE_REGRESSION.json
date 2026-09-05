@@ -1,0 +1,20 @@
+{
+  "expected": 372,
+  "failed": 0,
+  "gate": "PASS_DOCUMENTATION_PROVENANCE_COMPLETENESS_AUDIT",
+  "partitions": {
+    "qa029_qa042": 210,
+    "qa043_qa045": 30,
+    "qa046": 12,
+    "qa047": 12,
+    "qa048": 12,
+    "qa049_qa056": 96
+  },
+  "passed": 372,
+  "thread_environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  }
+}

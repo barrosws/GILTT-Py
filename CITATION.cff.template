@@ -1,0 +1,11 @@
+# TEMPLATE ONLY — NOT PUBLIC RELEASE METADATA
+cff-version: 1.2.0
+message: "If you use GILTT-Py 2.0, please cite the reviewed archival software record and associated article."
+title: "GILTT-Py 2.0"
+type: software
+version: "TO_RELEASE"
+authors:
+  - family-names: "TO_REVIEW"
+    given-names: "TO_REVIEW"
+# DOI, release date, ORCIDs, repository URL and license are intentionally omitted
+# until their dedicated review/release decisions are frozen.

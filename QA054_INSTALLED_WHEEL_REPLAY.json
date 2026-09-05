@@ -1,0 +1,72 @@
+{
+  "direct_stack": {
+    "mpmath": "1.3.0",
+    "numpy": "2.3.5",
+    "pytest": "9.0.2",
+    "scipy": "1.17.0",
+    "threadpoolctl": "3.6.0"
+  },
+  "gate": "PASS_SCIENTIFIC_METADATA_CITATION_LICENSING_CONTRACT",
+  "import_origin": "/mnt/data/qa054_final_installed_site/gilttpy/__init__.py",
+  "operational_partitioning_only": true,
+  "partitions": [
+    {
+      "failed": 0,
+      "name": "qa029_qa042",
+      "passed": 210
+    },
+    {
+      "failed": 0,
+      "name": "qa043_qa045",
+      "passed": 30
+    },
+    {
+      "failed": 0,
+      "name": "qa046",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa047",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa048",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa049",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa050",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa051",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa052",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa053",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa054",
+      "passed": 12
+    }
+  ],
+  "source_tree_import": false,
+  "total_failed": 0,
+  "total_passed": 348
+}

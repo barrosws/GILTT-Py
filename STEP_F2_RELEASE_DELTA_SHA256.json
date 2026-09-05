@@ -1,0 +1,11 @@
+{
+  "pyproject.toml": "61b8dc7ae722d2e537814cbb6a584fe2dd17c02cc4845b81d529a3bb513f9fbf",
+  "MANIFEST.in": "dc0aee5dc9f8523ce1f169cb81d82be47682a42f2630a42442ddec6860db3dce",
+  "README.md": "cf08c286fa66da72f36e1fd5fa2b3d9d49fde6277d6799958f5b35e7c8887e95",
+  "LICENSE": "98893b8ddb396dc01709594399e7d11701e904dc210a66f4a18232c406a95a72",
+  "RELEASE_NOTES_v2.0.0.md": "08cdc68f7c32cc9150e61c7bb1ece44e98893de8054a61a05c72e881ae8c2ab5",
+  "RELEASE_TRANSITION_QA_v2.0.0.md": "2b0c7b670259d045f1da1afaa0646a5d318b1eb853c40415a36522713143a624",
+  "metadata/step_f2_release_state.json": "9538d97432239b560cc2c20ee04a256cdce78b2c7262f5bf368fab92be8cc1c1",
+  ".github/workflows/release-ci.yml": "4d577b40bf88aa0fd01fcad2d0a4319d09d1d9f12365ecf463cc8e0112b08c6b",
+  "03_RELEASE_TESTS/test_step_f2_release_metadata.py": "8e76e99a4a4573f80c6980cef7b477f6305770d55a30116326fbc84d26e206fb"
+}

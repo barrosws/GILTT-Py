@@ -1,0 +1,94 @@
+gate = "PASS_OPERATIONAL_REPRODUCTION_DOCUMENTATION_CLOSURE"
+expected_total_tests = 384
+scope = "QA replay only; not manuscript table/figure reproduction"
+
+[environment]
+OPENBLAS_NUM_THREADS = "1"
+OMP_NUM_THREADS = "1"
+MKL_NUM_THREADS = "1"
+PYTHONHASHSEED = "0"
+
+[[partitions]]
+name = "qa029_qa042"
+qa_start = 29
+qa_end = 42
+expected_tests = 210
+
+[[partitions]]
+name = "qa043_qa045"
+qa_start = 43
+qa_end = 45
+expected_tests = 30
+
+[[partitions]]
+name = "qa046"
+qa_start = 46
+qa_end = 46
+expected_tests = 12
+
+[[partitions]]
+name = "qa047"
+qa_start = 47
+qa_end = 47
+expected_tests = 12
+
+[[partitions]]
+name = "qa048"
+qa_start = 48
+qa_end = 48
+expected_tests = 12
+
+[[partitions]]
+name = "qa049"
+qa_start = 49
+qa_end = 49
+expected_tests = 12
+
+[[partitions]]
+name = "qa050"
+qa_start = 50
+qa_end = 50
+expected_tests = 12
+
+[[partitions]]
+name = "qa051"
+qa_start = 51
+qa_end = 51
+expected_tests = 12
+
+[[partitions]]
+name = "qa052"
+qa_start = 52
+qa_end = 52
+expected_tests = 12
+
+[[partitions]]
+name = "qa053"
+qa_start = 53
+qa_end = 53
+expected_tests = 12
+
+[[partitions]]
+name = "qa054"
+qa_start = 54
+qa_end = 54
+expected_tests = 12
+
+[[partitions]]
+name = "qa055"
+qa_start = 55
+qa_end = 55
+expected_tests = 12
+
+[[partitions]]
+name = "qa056"
+qa_start = 56
+qa_end = 56
+expected_tests = 12
+
+[[partitions]]
+name = "qa057"
+qa_start = 57
+qa_end = 57
+expected_tests = 12
+

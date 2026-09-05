@@ -1,0 +1,20 @@
+{
+  "gate": "PASS_CLEAN_ROOM_RELEASE_REPRODUCIBILITY_CONTRACT",
+  "operational_note": "QA048 physical tests were executed as deterministic node-level subsets after an aggregate external execution-window timeout; no test bytes or parameters changed.",
+  "partitions": {
+    "qa029_qa042": 210,
+    "qa043_qa045": 30,
+    "qa046": 12,
+    "qa047": 12,
+    "qa048": 12,
+    "qa049": 12,
+    "qa050": 12,
+    "qa051": 12,
+    "qa052": 12,
+    "qa053": 12,
+    "qa054": 12,
+    "qa055": 12
+  },
+  "total_failed": 0,
+  "total_passed": 360
+}

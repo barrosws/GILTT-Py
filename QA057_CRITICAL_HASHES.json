@@ -1,0 +1,15 @@
+{
+  "01_SRC/gilttpy/engineering/operational_reproduction.py": "04c6d491c5f2e1c85c9f00096e7cd50d7620dbb4ab432f92b74b2ac4370187ad",
+  "01_SRC/gilttpy/validation/operational_reproduction_campaign.py": "b8d73a0f0b5a7bec29b0faf3431a3fab30391829340220d0c25ca906bc09116a",
+  "02_TESTS/test_qa057_operational_reproduction_documentation.py": "16cd301c55b25041baa698f9e480e389572e67f5980bda0fbfe3ad96ec29acff",
+  "MANIFEST.in": "66d27b6d382d73aac1cf9d67026b2d610b876c4ce05c6ed16db15e9ff2f7112a",
+  "QA057_SCOPE_GOVERNANCE.md": "467128f8dd04243d2ea9902d0dc97339e3dec089da528c008be898c97ff90a97",
+  "README.md": "a8b32d3f2e87aebb974990c703b44286de3d9a4c6f7d68fa14d043a791851756",
+  "coverage/qa057_coverage.json": "23320add98bb2ddd87381049759e25361e51659a351c33170eeac3009c7645d6",
+  "coverage/qa057_coverage.txt": "bc1365864a0fcce4b10b9f034921fc68da97c05d6128886b6163ea848200a5d7",
+  "docs/CHANGELOG.md": "3d1d1f9ceade55569eff720a6f9ff3abd4550dc79959cb46cab6ea3ab4308692",
+  "docs/INSTALLATION_QUICKSTART.md": "e414c6ba669862599b797cb179b169d1a3ab57a2d50b653684fcacdb3d2ac87b",
+  "docs/RELEASE_NOTES_DEV.md": "54e6c9b932020bf340b3d6709446c3aff1e9ea91741d7038ac1368e73d0727a4",
+  "docs/REPRODUCIBILITY.md": "148e011a6a30b0f7e6444497955b1f6f2cab2405e4488bffa2d84648ba6e6a9b",
+  "reproduction/qa057_qa_replay.toml": "3d61ff13afe4d24a362cac527ef87e4036a00c7fa03067397a924297be0aed90"
+}

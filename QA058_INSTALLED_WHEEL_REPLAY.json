@@ -1,0 +1,17 @@
+{
+  "collection": 396,
+  "failed": 0,
+  "gate": "PASS_ARCHIVAL_RELEASE_READINESS_AUDIT",
+  "import_file": "/mnt/data/qa058_installed_site/gilttpy/__init__.py",
+  "outside_governed_tree": true,
+  "passed": 396,
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "python": "3.13.5",
+  "thread_environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  },
+  "wheel_sha256": "b391cd44fdbb598aed6c050cd692d2e3fa112f8b1f00118c7ba001c3fb7ec592"
+}

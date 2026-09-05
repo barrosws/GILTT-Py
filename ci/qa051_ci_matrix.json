@@ -1,0 +1,27 @@
+{
+  "schema": "gilttpy.qa051.ci-matrix.v1",
+  "purpose": "Provider-neutral cross-platform compatibility execution plan; cells are CI_REQUIRED until actually executed.",
+  "python_series": ["3.11", "3.12", "3.13", "3.14"],
+  "platforms": ["linux", "macos", "windows"],
+  "architecture": "x86_64_or_native_64bit_runner",
+  "thread_environment": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  },
+  "steps": [
+    "provision exact requested Python major.minor",
+    "create a fresh isolated environment",
+    "install the frozen wheel with dependencies from the configured public index or release wheelhouse",
+    "record resolved package versions and environment fingerprint",
+    "run the complete frozen pytest suite",
+    "upload logs, resolved-environment record, and hashes"
+  ],
+  "pass_rule": "A cell becomes PASS only after its own runner completes the full frozen suite; metadata compatibility alone is insufficient.",
+  "dependency_tracks": {
+    "resolved_current": "required in CI",
+    "minimum_supported": "HOLD until per-Python floor environments are independently resolved and executed",
+    "hash_locked_hermetic": "HOLD until platform-specific wheelhouse/lock artifacts are built and replayed"
+  }
+}

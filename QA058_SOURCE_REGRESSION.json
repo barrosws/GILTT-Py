@@ -1,0 +1,15 @@
+{
+  "collection": 396,
+  "failed": 0,
+  "gate": "PASS_ARCHIVAL_RELEASE_READINESS_AUDIT",
+  "passed": 396,
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "python": "3.13.5",
+  "thread_environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  },
+  "total": 396
+}

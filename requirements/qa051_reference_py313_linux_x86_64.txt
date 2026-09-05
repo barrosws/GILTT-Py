@@ -1,0 +1,8 @@
+# QA-051 LOCAL REFERENCE RECORD ONLY — NOT A CROSS-PLATFORM LOCK FILE.
+# These direct/test versions are the packages actually used by the local QA051 cell.
+# Transitive artifacts and wheel hashes are intentionally not inferred from this file.
+numpy==2.3.5
+scipy==1.17.0
+mpmath==1.3.0
+pytest==9.0.2
+threadpoolctl==3.6.0

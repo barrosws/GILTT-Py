@@ -1,0 +1,4 @@
+# TEMPLATE ONLY — NOT AN EXECUTED LOCK
+# Hermetic entries require exact version AND one or more verified artifact hashes.
+# Example syntax only; do not use as evidence:
+# package==X.Y.Z --hash=sha256:<verified-wheel-or-sdist-hash>

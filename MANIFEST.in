@@ -1,0 +1,17 @@
+include README.md
+include LICENSE
+include LICENSE_POLICY.md
+include CITATION.cff.template
+include QA057_SCOPE_GOVERNANCE.md
+include RELEASE_NOTES_v2.0.0.md
+include RELEASE_TRANSITION_QA_v2.0.0.md
+include STEP_F2_RELEASE_DELTA_SHA256.json
+recursive-include 02_TESTS *.py
+recursive-include 03_RELEASE_TESTS *.py
+recursive-include docs *.md *.json
+recursive-include reproduction *.toml
+recursive-include metadata *.json
+recursive-include requirements *.txt *.json
+recursive-include ci *.json
+recursive-include .github *.yml
+recursive-include coverage qa057_coverage.json qa057_coverage.txt

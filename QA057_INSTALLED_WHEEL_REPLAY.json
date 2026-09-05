@@ -1,0 +1,18 @@
+{
+  "expected_total_tests": 384,
+  "failed": 0,
+  "gate": "PASS_OPERATIONAL_REPRODUCTION_DOCUMENTATION_CLOSURE",
+  "import_file": "/mnt/data/qa057_installed_site/gilttpy/__init__.py",
+  "one_command_exit_code": 0,
+  "outside_governed_tree": true,
+  "passed": 384,
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "python": "3.13.5",
+  "thread_environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  },
+  "wheel_sha256": "3c1f8b3c0df8830fce9a47ecf2df5ab45282ebdc05356a200904746a71976475"
+}

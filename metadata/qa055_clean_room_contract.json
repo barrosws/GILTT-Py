@@ -1,0 +1,140 @@
+{
+  "build": {
+    "canonical_release_ci_command": [
+      "python",
+      "-m",
+      "build"
+    ],
+    "fallback_role": "local deterministic engineering evidence only; does not resolve standard frontend HOLD",
+    "local_fallback_command": [
+      "python",
+      "-m",
+      "pip",
+      "wheel",
+      "--no-deps",
+      "--no-build-isolation",
+      "."
+    ],
+    "local_frontend_available": false,
+    "required_release_outputs": [
+      "sdist",
+      "wheel"
+    ]
+  },
+  "expected_total_tests": 360,
+  "gate": "PASS_CLEAN_ROOM_RELEASE_REPRODUCIBILITY_CONTRACT",
+  "holds": [
+    "HOLD_EXTERNAL_CI_MATRIX_EXECUTION",
+    "HOLD_CROSS_PLATFORM_HERMETIC_LOCK",
+    "HOLD_MINIMUM_SUPPORTED_DEPENDENCY_EXECUTION",
+    "HOLD_STANDARD_PYPA_BUILD_FRONTEND_LOCAL_EXECUTION",
+    "HOLD_FINAL_PUBLIC_RELEASE_METADATA",
+    "HOLD_VCS_TAG_SIGNING_AND_PUBLICATION"
+  ],
+  "installation": {
+    "dependency_semantics": "QA053 local resolution inherited; not a universal hermetic lock",
+    "install_target": "fresh external site-packages directory",
+    "source_tree_import_allowed": false
+  },
+  "matrix_semantics": "local clean-room PASS is evidence only for the executed local cell; no cross-platform promotion",
+  "partitions": [
+    {
+      "expected_tests": 210,
+      "name": "qa029_qa042",
+      "qa_end": 42,
+      "qa_start": 29
+    },
+    {
+      "expected_tests": 30,
+      "name": "qa043_qa045",
+      "qa_end": 45,
+      "qa_start": 43
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa046",
+      "qa_end": 46,
+      "qa_start": 46
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa047",
+      "qa_end": 47,
+      "qa_start": 47
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa048",
+      "qa_end": 48,
+      "qa_start": 48
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa049",
+      "qa_end": 49,
+      "qa_start": 49
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa050",
+      "qa_end": 50,
+      "qa_start": 50
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa051",
+      "qa_end": 51,
+      "qa_start": 51
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa052",
+      "qa_end": 52,
+      "qa_start": 52
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa053",
+      "qa_end": 53,
+      "qa_start": 53
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa054",
+      "qa_end": 54,
+      "qa_start": 54
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa055",
+      "qa_end": 55,
+      "qa_start": 55
+    }
+  ],
+  "prohibitions": [
+    "PROHIBIT_SOURCE_TREE_IMPORT_AS_CLEAN_ROOM_EVIDENCE",
+    "PROHIBIT_UNEXECUTED_MATRIX_CELL_AS_PASS",
+    "PROHIBIT_LOCAL_CLEAN_ROOM_AS_CROSS_PLATFORM_PROOF",
+    "PROHIBIT_UNRESOLVED_METADATA_AS_FINAL_RELEASE_METADATA",
+    "PROHIBIT_ENGINEERING_GATE_AS_SCIENTIFIC_VALIDATION",
+    "PROHIBIT_TARGET_TUNING"
+  ],
+  "public_release_metadata_ready": false,
+  "scope": "local clean-room release reproducibility evidence; not public release readiness",
+  "stage_order": [
+    "source_integrity",
+    "distribution_build",
+    "artifact_integrity",
+    "isolated_install",
+    "installed_import_provenance",
+    "partitioned_test_replay",
+    "runtime_provenance",
+    "evidence_record"
+  ],
+  "thread_environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  }
+}

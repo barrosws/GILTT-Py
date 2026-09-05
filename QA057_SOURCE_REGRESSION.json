@@ -1,0 +1,39 @@
+{
+  "collection": 384,
+  "failed": 0,
+  "gate": "PASS_OPERATIONAL_REPRODUCTION_DOCUMENTATION_CLOSURE",
+  "note": "QA048 was split only to fit executor windows; bytes, tests, scientific parameters and tolerances were unchanged.",
+  "partitions": [
+    {
+      "failed": 0,
+      "name": "qa029_qa046",
+      "passed": 252
+    },
+    {
+      "failed": 0,
+      "name": "qa047",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa048",
+      "operational_split": true,
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa049_qa057",
+      "passed": 108
+    }
+  ],
+  "passed": 384,
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+  "python": "3.13.5",
+  "thread_environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  },
+  "total": 384
+}

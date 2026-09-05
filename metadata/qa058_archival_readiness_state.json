@@ -1,0 +1,218 @@
+{
+  "archival_release_ready": false,
+  "critical_hashes": {
+    "MANIFEST.in": "66d27b6d382d73aac1cf9d67026b2d610b876c4ce05c6ed16db15e9ff2f7112a",
+    "QA057_SCOPE_GOVERNANCE.md": "467128f8dd04243d2ea9902d0dc97339e3dec089da528c008be898c97ff90a97",
+    "README.md": "a8b32d3f2e87aebb974990c703b44286de3d9a4c6f7d68fa14d043a791851756",
+    "docs/CHANGELOG.md": "3d1d1f9ceade55569eff720a6f9ff3abd4550dc79959cb46cab6ea3ab4308692",
+    "docs/INSTALLATION_QUICKSTART.md": "e414c6ba669862599b797cb179b169d1a3ab57a2d50b653684fcacdb3d2ac87b",
+    "docs/RELEASE_NOTES_DEV.md": "54e6c9b932020bf340b3d6709446c3aff1e9ea91741d7038ac1368e73d0727a4",
+    "docs/REPRODUCIBILITY.md": "148e011a6a30b0f7e6444497955b1f6f2cab2405e4488bffa2d84648ba6e6a9b",
+    "metadata/qa054_release_metadata_state.json": "c6aa0125a26fcd24dd49a0907ce5769ac5e09b3b393afc2e4d2d0b34db8ca04f",
+    "pyproject.toml": "bc92829216f5ccd4147eb8c461bac4715bb8a8fda3076040c17eef12e8129ba7",
+    "reproduction/qa057_qa_replay.toml": "3d61ff13afe4d24a362cac527ef87e4036a00c7fa03067397a924297be0aed90"
+  },
+  "gate": "PASS_ARCHIVAL_RELEASE_READINESS_AUDIT",
+  "hold_roles": [
+    "canonical_data_release",
+    "citation_doi_metadata",
+    "cross_platform_hermetic_lock",
+    "data_rights_provenance",
+    "external_ci_matrix",
+    "full_package_coverage",
+    "manuscript_output_reproduction",
+    "public_software_version",
+    "scientific_config_coverage",
+    "software_authorship_orcids",
+    "software_license",
+    "zenodo_archival_record"
+  ],
+  "holds": [
+    "HOLD_PUBLIC_SOFTWARE_VERSION",
+    "HOLD_SOFTWARE_AUTHORSHIP_AND_ORCID_REVIEW",
+    "HOLD_SOFTWARE_LICENSE_SELECTION",
+    "HOLD_DATA_REDISTRIBUTION_RIGHTS_AUDIT",
+    "HOLD_FINAL_CITATION_CFF_AND_DOI",
+    "HOLD_CANONICAL_DATA_RELEASE",
+    "HOLD_MANUSCRIPT_ASSOCIATED_OUTPUT_FREEZE",
+    "HOLD_MACHINE_READABLE_CONFIG_COVERAGE_FOR_ALL_CANONICAL_SCIENTIFIC_RUNS",
+    "HOLD_FULL_PACKAGE_COVERAGE_REPORT",
+    "HOLD_EXTERNAL_CI_MATRIX_EXECUTION",
+    "HOLD_CROSS_PLATFORM_HERMETIC_LOCK",
+    "HOLD_STANDARD_PYPA_BUILD_FRONTEND_LOCAL_EXECUTION",
+    "HOLD_ZENODO_DEPOSITION"
+  ],
+  "prohibitions": [
+    "PROHIBIT_AUDIT_PASS_AS_ARCHIVAL_RELEASE_READY",
+    "PROHIBIT_GUESSED_AUTHORSHIP_OR_ORCID",
+    "PROHIBIT_UNREVIEWED_LICENSE_SELECTION",
+    "PROHIBIT_UNVERIFIED_DATA_REDISTRIBUTION_RIGHTS",
+    "PROHIBIT_PLACEHOLDER_CITATION_AS_FINAL_METADATA",
+    "PROHIBIT_QA_REPLAY_AS_MANUSCRIPT_OUTPUT_REPRODUCTION_PROOF",
+    "PROHIBIT_LOCAL_REPLAY_AS_CROSS_PLATFORM_PROOF",
+    "PROHIBIT_ENGINEERING_GATE_AS_SCIENTIFIC_VALIDATION",
+    "PROHIBIT_TARGET_TUNING"
+  ],
+  "public_release_blockers": [
+    "canonical_data_release",
+    "citation_doi_metadata",
+    "cross_platform_hermetic_lock",
+    "data_rights_provenance",
+    "external_ci_matrix",
+    "manuscript_output_reproduction",
+    "public_software_version",
+    "scientific_config_coverage",
+    "software_authorship_orcids",
+    "software_license",
+    "zenodo_archival_record"
+  ],
+  "ready_roles": [
+    "development_change_history",
+    "distribution_reproducibility",
+    "installation_reproduction_docs",
+    "integrity_manifest",
+    "operational_qa_replay",
+    "runtime_environment_provenance"
+  ],
+  "roles": [
+    {
+      "key": "distribution_reproducibility",
+      "note": "QA057 deterministic distribution evidence is frozen locally.",
+      "paths": [
+        "QA057_BUILD_REPRODUCIBILITY.json"
+      ],
+      "status": "READY"
+    },
+    {
+      "key": "operational_qa_replay",
+      "note": "QA057 one-command QA replay is frozen; this is not manuscript-output reproduction.",
+      "paths": [
+        "QA057_SOURCE_ONE_COMMAND_REPLAY.json",
+        "reproduction/qa057_qa_replay.toml"
+      ],
+      "status": "READY"
+    },
+    {
+      "key": "integrity_manifest",
+      "note": "Checkpoint integrity manifests are present.",
+      "paths": [
+        "manifest.json",
+        "SHA256SUMS.txt"
+      ],
+      "status": "READY"
+    },
+    {
+      "key": "runtime_environment_provenance",
+      "note": "Executed local runtime/dependency provenance is present; cross-platform lock remains separate HOLD.",
+      "paths": [
+        "requirements/qa053_local_resolution_py313_linux_x86_64.json"
+      ],
+      "status": "READY"
+    },
+    {
+      "key": "installation_reproduction_docs",
+      "note": "Operational installation/reproduction instructions are present.",
+      "paths": [
+        "docs/INSTALLATION_QUICKSTART.md",
+        "docs/REPRODUCIBILITY.md"
+      ],
+      "status": "READY"
+    },
+    {
+      "key": "development_change_history",
+      "note": "Development change history is present but is not a public release.",
+      "paths": [
+        "docs/CHANGELOG.md",
+        "docs/RELEASE_NOTES_DEV.md"
+      ],
+      "status": "READY"
+    },
+    {
+      "key": "public_software_version",
+      "note": "Current version is 0.0.0.dev1; public release version remains an explicit decision.",
+      "paths": [
+        "pyproject.toml"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "software_authorship_orcids",
+      "note": "Software authorship and ORCIDs remain under explicit review and may not be inferred.",
+      "paths": [
+        "metadata/qa054_release_metadata_state.json"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "software_license",
+      "note": "License policy exists; no software license has been selected.",
+      "paths": [
+        "LICENSE_POLICY.md"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "citation_doi_metadata",
+      "note": "Only a template exists; DOI and final citation metadata remain HOLD.",
+      "paths": [
+        "CITATION.cff.template"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "canonical_data_release",
+      "note": "No canonical public data release is frozen by QA058.",
+      "paths": [],
+      "status": "HOLD"
+    },
+    {
+      "key": "data_rights_provenance",
+      "note": "Complete data/source provenance and redistribution-rights adjudication remains HOLD.",
+      "paths": [
+        "LICENSE_POLICY.md"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "scientific_config_coverage",
+      "note": "QA replay config exists; complete configs for manuscript-associated scientific runs remain HOLD.",
+      "paths": [
+        "reproduction/qa057_qa_replay.toml"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "manuscript_output_reproduction",
+      "note": "No frozen end-to-end manuscript table/figure regeneration proof exists yet.",
+      "paths": [],
+      "status": "HOLD"
+    },
+    {
+      "key": "full_package_coverage",
+      "note": "Only QA057 operational-layer coverage is frozen; full-package coverage remains HOLD.",
+      "paths": [
+        "coverage/qa057_coverage.json"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "external_ci_matrix",
+      "note": "Unexecuted Python/platform cells may not be promoted to PASS.",
+      "paths": [],
+      "status": "HOLD"
+    },
+    {
+      "key": "cross_platform_hermetic_lock",
+      "note": "Local dependency resolution is not a universal cross-platform hermetic lock.",
+      "paths": [],
+      "status": "HOLD"
+    },
+    {
+      "key": "zenodo_archival_record",
+      "note": "Zenodo deposition is downstream of final release audit and metadata decisions.",
+      "paths": [],
+      "status": "HOLD"
+    }
+  ],
+  "scope": "final archival-release-readiness audit; audit PASS is not archival release readiness"
+}

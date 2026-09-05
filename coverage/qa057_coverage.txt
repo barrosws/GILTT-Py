@@ -1,0 +1,6 @@
+Name                                                             Stmts   Miss  Cover
+------------------------------------------------------------------------------------
+01_SRC/gilttpy/engineering/operational_reproduction.py             127     64    50%
+01_SRC/gilttpy/validation/operational_reproduction_campaign.py      13      0   100%
+------------------------------------------------------------------------------------
+TOTAL                                                              140     64    54%

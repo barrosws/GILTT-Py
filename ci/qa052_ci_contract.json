@@ -1,0 +1,138 @@
+{
+  "artifact_integrity": {
+    "cross_platform_wheel_byte_identity_required": false,
+    "reason": "platform/Python cells are independently verified; cross-platform wheel byte identity is not assumed",
+    "sha256_required": true
+  },
+  "build": {
+    "canonical_release_ci_command": [
+      "python",
+      "-m",
+      "build"
+    ],
+    "local_qa052_execution_status": "HOLD_BUILD_FRONTEND_NOT_INSTALLED_IN_LOCAL_EXECUTOR",
+    "required_outputs": [
+      "sdist",
+      "wheel"
+    ]
+  },
+  "expected_total_tests": 324,
+  "failure_semantics": {
+    "artifact_hash_mismatch": "FAIL_CELL",
+    "failed_test": "FAIL_CELL",
+    "missing_stage": "FAIL_CELL",
+    "source_tree_import": "FAIL_CELL",
+    "unexecuted_cell": "CI_REQUIRED",
+    "unexpected_test_count": "FAIL_CELL"
+  },
+  "gate": "PASS_DETERMINISTIC_CI_ORCHESTRATION_SPECIFICATION",
+  "holds": [
+    "HOLD_EXTERNAL_CI_MATRIX_EXECUTION",
+    "HOLD_HERMETIC_HASH_LOCKED_DEPENDENCY_RESOLUTION",
+    "HOLD_MINIMUM_DEPENDENCY_COMPATIBILITY_EXECUTION",
+    "HOLD_STANDARD_PYPA_BUILD_FRONTEND_LOCAL_EXECUTION",
+    "HOLD_RELEASE_CI_PROVIDER_ACTIVATION",
+    "HOLD_PUBLIC_RELEASE_PUBLISHING"
+  ],
+  "installed_replay": {
+    "pytest_entrypoint": [
+      "python",
+      "-m",
+      "pytest"
+    ],
+    "source_tree_import_allowed": false,
+    "test_execution": "deterministic partitions"
+  },
+  "matrix": {
+    "platforms": [
+      "linux",
+      "macos",
+      "windows"
+    ],
+    "promotion_semantics": "each matrix cell is independent evidence; no transitive PASS",
+    "python_series": [
+      "3.11",
+      "3.12",
+      "3.13",
+      "3.14"
+    ]
+  },
+  "partitions": [
+    {
+      "expected_tests": 210,
+      "name": "qa029_qa042",
+      "qa_end": 42,
+      "qa_start": 29
+    },
+    {
+      "expected_tests": 30,
+      "name": "qa043_qa045",
+      "qa_end": 45,
+      "qa_start": 43
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa046",
+      "qa_end": 46,
+      "qa_start": 46
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa047",
+      "qa_end": 47,
+      "qa_start": 47
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa048",
+      "qa_end": 48,
+      "qa_start": 48
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa049",
+      "qa_end": 49,
+      "qa_start": 49
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa050",
+      "qa_end": 50,
+      "qa_start": 50
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa051",
+      "qa_end": 51,
+      "qa_start": 51
+    },
+    {
+      "expected_tests": 12,
+      "name": "qa052",
+      "qa_end": 52,
+      "qa_start": 52
+    }
+  ],
+  "prohibitions": [
+    "PROHIBIT_PARTIAL_PARTITION_SET_AS_FULL_PASS",
+    "PROHIBIT_SOURCE_TREE_IMPORT_IN_INSTALLED_ARTIFACT_REPLAY",
+    "PROHIBIT_CROSS_PLATFORM_WHEEL_BYTE_IDENTITY_ASSUMPTION",
+    "PROHIBIT_UNEXECUTED_MATRIX_CELL_AS_PASS",
+    "PROHIBIT_ENGINEERING_GATE_AS_SCIENTIFIC_VALIDATION",
+    "PROHIBIT_TARGET_TUNING"
+  ],
+  "stage_order": [
+    "metadata_contract",
+    "distribution_build",
+    "installed_artifact_import",
+    "partitioned_test_replay",
+    "artifact_integrity",
+    "evidence_record"
+  ],
+  "thread_environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  }
+}

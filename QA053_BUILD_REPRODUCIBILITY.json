@@ -1,0 +1,29 @@
+{
+  "build_frontend": {
+    "canonical_release_frontend": "python -m build",
+    "local_method": "pip wheel --no-deps --no-build-isolation / direct setuptools backend for sdist",
+    "local_standard_frontend_status": "HOLD_NOT_INSTALLED"
+  },
+  "gate_candidate": "PASS_DEPENDENCY_LOCK_AND_ENVIRONMENT_RESOLUTION_CONTRACT",
+  "normalized_sdist": {
+    "filename": "gilttpy-0.0.0.dev1.tar.gz",
+    "independent_normalizations_bitwise_identical": true,
+    "sha256": "f92df9369a4c13ee2c235999caec4a50acc180f1bac2f053c6b7bd24eb9e6c15",
+    "size_bytes": 92892
+  },
+  "raw_sdist": {
+    "build1_sha256": "e242b47dfe99065dd605d36c4234beca4e91168571e6f0be0cbcc721845d7244",
+    "build2_sha256": "9b51766b993118fdcff703d556b55ebbee097eea8c73ae69ec52e589aa98781a",
+    "classification": "CONTROLLED_CONTAINER_TIMESTAMP_VARIABILITY"
+  },
+  "wheel": {
+    "filename": "gilttpy-0.0.0.dev1-py3-none-any.whl",
+    "independent_builds_bitwise_identical": true,
+    "sha256": "6832bf42d3afd64066824eaf8ab7c51795d849bf58b0a58fcd04756e711b35a1",
+    "size_bytes": 130854
+  },
+  "wheel_rebuilt_from_normalized_sdist": {
+    "exactly_matches_direct_wheel": true,
+    "sha256": "6832bf42d3afd64066824eaf8ab7c51795d849bf58b0a58fcd04756e711b35a1"
+  }
+}

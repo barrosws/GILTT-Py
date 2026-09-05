@@ -1,0 +1,14 @@
+{
+  "build_backend": "setuptools.build_meta",
+  "canonical_release_frontend_local_status": "HOLD_PYPA_BUILD_FRONTEND_NOT_INSTALLED",
+  "normalized_sdist_sha256": "eea625afb8c0bee4e5f2dde1bf31d0c67be1469644bbb3fcdba6a115b88d51b6",
+  "normalized_sdist_size": 94664,
+  "raw_sdist_byte_identity": false,
+  "raw_sdist_variability_classification": "CONTROLLED_CONTAINER_TIMESTAMP_VARIABILITY",
+  "source_date_epoch": 1788436800,
+  "two_direct_wheels_bitwise_identical": true,
+  "two_normalized_sdists_bitwise_identical": true,
+  "wheel_rebuilt_from_normalized_sdist_exact": true,
+  "wheel_sha256": "23fb1ad0277762c2303ff4bb782d66d7b8e2b60baa4b7d447e633540503bcdfd",
+  "wheel_size": 133730
+}

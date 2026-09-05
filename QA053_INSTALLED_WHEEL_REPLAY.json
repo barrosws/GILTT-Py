@@ -1,0 +1,72 @@
+{
+  "direct_versions": {
+    "mpmath": "1.3.0",
+    "numpy": "2.3.5",
+    "pytest": "9.0.2",
+    "scipy": "1.17.0",
+    "threadpoolctl": "3.6.0"
+  },
+  "gate_candidate": "PASS_DEPENDENCY_LOCK_AND_ENVIRONMENT_RESOLUTION_CONTRACT",
+  "import_origin": "/mnt/data/qa053_installed_site/gilttpy/__init__.py",
+  "partitions": [
+    {
+      "failed": 0,
+      "name": "qa029_qa042",
+      "passed": 210
+    },
+    {
+      "failed": 0,
+      "name": "qa043_qa045",
+      "passed": 30
+    },
+    {
+      "failed": 0,
+      "name": "qa046",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa047",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa048",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa049",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa050",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa051",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa052",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa053",
+      "passed": 12
+    }
+  ],
+  "platform": "Linux x86_64",
+  "python": "3.13.5",
+  "semantics": {
+    "local_resolution_is_cross_platform_evidence": false,
+    "local_resolution_is_hermetic_hash_lock": false
+  },
+  "source_tree_import": false,
+  "total_failed": 0,
+  "total_passed": 336
+}

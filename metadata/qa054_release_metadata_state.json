@@ -1,0 +1,21 @@
+{
+  "artifact_type": "software",
+  "cff_version_target": "1.2.0",
+  "display_title": "GILTT-Py 2.0",
+  "fields": {
+    "author_orcids": {"status": "HOLD", "value": null},
+    "data_redistribution_rights": {"status": "HOLD", "value": null},
+    "release_date": {"status": "HOLD", "value": null},
+    "release_doi": {"status": "HOLD", "value": null},
+    "release_version": {"status": "HOLD", "value": null},
+    "repository_code_url": {"status": "HOLD", "value": null},
+    "software_authorship": {"status": "HOLD", "value": null},
+    "software_license_spdx": {"status": "HOLD", "value": null}
+  },
+  "known": {
+    "development_version": "0.0.0.dev1",
+    "package_name": "gilttpy",
+    "requires_python": ">=3.11,<3.15"
+  },
+  "status": "METADATA_CONTRACT_READY_RELEASE_METADATA_HELD"
+}

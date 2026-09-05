@@ -1,0 +1,18 @@
+{
+  "bitwise_identical": true,
+  "canonical_release_ci_frontend": "python -m build",
+  "canonical_release_ci_frontend_local_status": "HOLD_STANDARD_PYPA_BUILD_FRONTEND_LOCAL_EXECUTION",
+  "gate": "PASS_DETERMINISTIC_CI_ORCHESTRATION_SPECIFICATION",
+  "local_validation_route": "python -m pip wheel --no-deps --no-build-isolation .",
+  "sdist_local_canonical_frontend_status": "NOT_EXECUTED",
+  "semantics": "Local deterministic wheel evidence does not close the standard PyPA frontend or sdist release-CI stage.",
+  "source_date_epoch": 1788446400,
+  "wheel_build_1": {
+    "sha256": "902bb821922bd8b6fc488a75c8e96e97923417bd608a058e0a89640bec251e76",
+    "size": 128938
+  },
+  "wheel_build_2": {
+    "sha256": "902bb821922bd8b6fc488a75c8e96e97923417bd608a058e0a89640bec251e76",
+    "size": 128938
+  }
+}

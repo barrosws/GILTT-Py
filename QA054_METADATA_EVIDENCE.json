@@ -1,0 +1,21 @@
+{
+  "authors_declared_in_pyproject": false,
+  "cff_schema_target": "1.2.0",
+  "core_metadata_license_version": "2.4",
+  "development_version": "0.0.0.dev1",
+  "license_declared_in_pyproject": false,
+  "pep639_min_setuptools": "77.0.3",
+  "project_name": "gilttpy",
+  "public_release_ready": false,
+  "requires_python": ">=3.11,<3.15",
+  "unresolved_fields": [
+    "author_orcids",
+    "data_redistribution_rights",
+    "release_date",
+    "release_doi",
+    "release_version",
+    "repository_code_url",
+    "software_authorship",
+    "software_license_spdx"
+  ]
+}

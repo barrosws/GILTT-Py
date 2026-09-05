@@ -1,0 +1,72 @@
+{
+  "ci_cell_promotion_reason": "Canonical python -m build wheel+sdist stage remains HOLD in this executor.",
+  "ci_cell_promotion_status": "NOT_PROMOTED_UNDER_FULL_QA052_STAGE_CHAIN",
+  "environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0",
+    "machine": "x86_64",
+    "mpmath": "1.3.0",
+    "numpy": "2.3.5",
+    "platform": "Linux",
+    "pytest": "9.0.2",
+    "python": "3.13.5",
+    "scipy": "1.17.0",
+    "threadpoolctl": "3.6.0"
+  },
+  "gate": "PASS_DETERMINISTIC_CI_ORCHESTRATION_SPECIFICATION",
+  "installed_import": "/mnt/data/qa052_isolated/site-packages/gilttpy/__init__.py",
+  "partitions": {
+    "qa029_qa042": {
+      "failed": 0,
+      "log": "logs/installed_wheel_qa029_qa042.log",
+      "passed": 210
+    },
+    "qa043_qa045": {
+      "failed": 0,
+      "log": "logs/installed_wheel_qa043_qa045.log",
+      "passed": 30
+    },
+    "qa046": {
+      "failed": 0,
+      "log": "logs/installed_wheel_qa046.log",
+      "passed": 12
+    },
+    "qa047": {
+      "failed": 0,
+      "log": "logs/installed_wheel_qa047.log",
+      "passed": 12
+    },
+    "qa048": {
+      "failed": 0,
+      "log": "logs/installed_wheel_qa048.log",
+      "passed": 12
+    },
+    "qa049": {
+      "failed": 0,
+      "log": "logs/installed_wheel_qa049.log",
+      "passed": 12
+    },
+    "qa050": {
+      "failed": 0,
+      "log": "logs/installed_wheel_qa050.log",
+      "passed": 12
+    },
+    "qa051": {
+      "failed": 0,
+      "log": "logs/installed_wheel_qa051.log",
+      "passed": 12
+    },
+    "qa052": {
+      "failed": 0,
+      "log": "logs/installed_wheel_qa052.log",
+      "passed": 12
+    }
+  },
+  "source_tree_import": false,
+  "status": "PASS_INSTALLED_WHEEL_REPLAY_LOCAL_CELL_EVIDENCE",
+  "total_failed": 0,
+  "total_passed": 324,
+  "wheel_sha256": "902bb821922bd8b6fc488a75c8e96e97923417bd608a058e0a89640bec251e76"
+}

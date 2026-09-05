@@ -1,0 +1,29 @@
+{
+  "build_backend": "setuptools.build_meta",
+  "canonical_release_frontend_local_status": "HOLD_PYPA_BUILD_FRONTEND_NOT_INSTALLED",
+  "raw_sdist_byte_identity": false,
+  "s1": {
+    "sha256": "3d9f68424d51fbb5e355b5c52bd32c1196443c40f0908ef31f91a53cb57c36d7",
+    "size": 95912
+  },
+  "s2": {
+    "sha256": "3d9f68424d51fbb5e355b5c52bd32c1196443c40f0908ef31f91a53cb57c36d7",
+    "size": 95912
+  },
+  "source_date_epoch": 1788436800,
+  "two_direct_wheels_bitwise_identical": true,
+  "two_normalized_sdists_bitwise_identical": true,
+  "w1": {
+    "sha256": "49c76e2de2bd5fd726b30686e397b1dd77b353b786dee7fd7b7c838c22dfc009",
+    "size": 137231
+  },
+  "w2": {
+    "sha256": "49c76e2de2bd5fd726b30686e397b1dd77b353b786dee7fd7b7c838c22dfc009",
+    "size": 137231
+  },
+  "wheel_rebuilt_from_normalized_sdist_exact": true,
+  "ws": {
+    "sha256": "49c76e2de2bd5fd726b30686e397b1dd77b353b786dee7fd7b7c838c22dfc009",
+    "size": 137231
+  }
+}

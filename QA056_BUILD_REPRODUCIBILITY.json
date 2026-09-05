@@ -1,0 +1,16 @@
+{
+  "canonical_release_frontend_local_status": "HOLD_PYPA_BUILD_FRONTEND_NOT_INSTALLED",
+  "normalized_sdist": {
+    "sha256": "5be9c4ff2ab8fb396aa7b8f0ce0352b6fcbea6874749ea425510722d0dac6f03",
+    "size": 98426
+  },
+  "raw_sdist_byte_identity": false,
+  "source_date_epoch": 1788436800,
+  "two_direct_wheels_bitwise_identical": true,
+  "two_normalized_sdists_bitwise_identical": true,
+  "wheel": {
+    "sha256": "7de2d603b6f65d48d2d74bb7f2ec5ec7dc5b4c437086307afa71fbfb697978c2",
+    "size": 141124
+  },
+  "wheel_rebuilt_from_normalized_sdist_exact": true
+}

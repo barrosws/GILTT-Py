@@ -1,0 +1,53 @@
+{
+  "partitions": {
+    "qa029_qa042": {
+      "failed": 0,
+      "log": "logs/source_qa029_qa042.log",
+      "passed": 210
+    },
+    "qa043_qa045": {
+      "failed": 0,
+      "log": "logs/source_qa043_qa045.log",
+      "passed": 30
+    },
+    "qa046": {
+      "failed": 0,
+      "log": "logs/source_qa046.log",
+      "passed": 12
+    },
+    "qa047": {
+      "failed": 0,
+      "log": "logs/source_qa047.log",
+      "passed": 12
+    },
+    "qa048": {
+      "failed": 0,
+      "log": "logs/source_qa048.log",
+      "passed": 12
+    },
+    "qa049": {
+      "failed": 0,
+      "log": "logs/source_qa049.log",
+      "passed": 12
+    },
+    "qa050": {
+      "failed": 0,
+      "log": "logs/source_qa050.log",
+      "passed": 12
+    },
+    "qa051": {
+      "failed": 0,
+      "log": "logs/source_qa051.log",
+      "passed": 12
+    },
+    "qa052": {
+      "failed": 0,
+      "log": "logs/source_qa052.log",
+      "passed": 12
+    }
+  },
+  "preliminary_log": "logs/PRELIMINARY_QA051_PACKAGING_FAILURE.log",
+  "preliminary_packaging_event": "QA051 scope governance file absent from first QA052 staging copy; QA051 returned 11/12 due FileNotFoundError. Exact inherited artifact restored and canonical source replay passed 324/324.",
+  "total_failed": 0,
+  "total_passed": 324
+}

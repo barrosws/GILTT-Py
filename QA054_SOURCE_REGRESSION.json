@@ -1,0 +1,63 @@
+{
+  "gate": "PASS_SCIENTIFIC_METADATA_CITATION_LICENSING_CONTRACT",
+  "operational_partitioning_only": true,
+  "partitions": [
+    {
+      "failed": 0,
+      "name": "qa029_qa042",
+      "passed": 210
+    },
+    {
+      "failed": 0,
+      "name": "qa043_qa045",
+      "passed": 30
+    },
+    {
+      "failed": 0,
+      "name": "qa046",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa047",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa048",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa049",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa050",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa051",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa052",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa053",
+      "passed": 12
+    },
+    {
+      "failed": 0,
+      "name": "qa054",
+      "passed": 12
+    }
+  ],
+  "total_failed": 0,
+  "total_passed": 348
+}

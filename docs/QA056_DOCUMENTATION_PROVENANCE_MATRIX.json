@@ -1,0 +1,185 @@
+{
+  "archival_release_ready": false,
+  "critical_hashes": {
+    "CITATION.cff.template": "1a617b8fbe2dd2c2074fbf68f87f4c3ffd22276acb2ed89db17135716c9067a5",
+    "LICENSE_POLICY.md": "0eeb7ce021eb49eff0775f99dabf2de4dbd86b2e49bb73354d7713e7a9157ac1",
+    "README.md": "23b9c45853d7ce54b081260d9dbe786849d422e7ee6f3fd30b9dd010daa8cd10",
+    "SHA256SUMS.txt": "e583782c66e32ae2dab7adbbe3b4dcb2c3067d9b2b438a8a679ab548b8ccb8dc",
+    "metadata/qa054_release_metadata_state.json": "c6aa0125a26fcd24dd49a0907ce5769ac5e09b3b393afc2e4d2d0b34db8ca04f",
+    "metadata/qa055_clean_room_contract.json": "38fb8fdd4aabc6bd7fde813911000c69f66180f739c82d447b15898bdbd71b13",
+    "pyproject.toml": "bc92829216f5ccd4147eb8c461bac4715bb8a8fda3076040c17eef12e8129ba7"
+  },
+  "gate": "PASS_DOCUMENTATION_PROVENANCE_COMPLETENESS_AUDIT",
+  "holds": [
+    "HOLD_INSTALLATION_QUICKSTART_WITH_EXECUTABLE_COMMANDS",
+    "HOLD_ONE_COMMAND_CANONICAL_REPRODUCTION_ENTRYPOINT",
+    "HOLD_CHANGELOG_AND_RELEASE_NOTES",
+    "HOLD_MACHINE_READABLE_CONFIG_COVERAGE_FOR_ALL_CANONICAL_RUNS",
+    "HOLD_DATA_AND_SOURCE_PROVENANCE_CATALOG_COMPLETENESS",
+    "HOLD_AUTOMATED_TEST_COVERAGE_REPORT",
+    "HOLD_FINAL_PUBLIC_RELEASE_METADATA",
+    "HOLD_ZENODO_ARCHIVAL_RECORD"
+  ],
+  "prohibitions": [
+    "PROHIBIT_MISSING_DOCUMENTATION_AS_IMPLICITLY_COMPLETE",
+    "PROHIBIT_UNRESOLVED_METADATA_AS_FINAL_RELEASE_METADATA",
+    "PROHIBIT_UNVERIFIED_DATA_REDISTRIBUTION_RIGHTS",
+    "PROHIBIT_SOURCE_AUTHOR_AS_SOFTWARE_AUTHOR_BY_INFERENCE",
+    "PROHIBIT_ENGINEERING_GATE_AS_SCIENTIFIC_VALIDATION",
+    "PROHIBIT_TARGET_TUNING"
+  ],
+  "roles": [
+    {
+      "key": "readme_project_scope",
+      "note": "README distinguishes the historical and modern branches.",
+      "paths": [
+        "README.md"
+      ],
+      "status": "PRESENT"
+    },
+    {
+      "key": "installation_quickstart",
+      "note": "README currently lacks an executable installation quickstart.",
+      "paths": [
+        "README.md"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "reproduction_entrypoint",
+      "note": "No single canonical reproduction entrypoint is frozen.",
+      "paths": [],
+      "status": "HOLD"
+    },
+    {
+      "key": "machine_readable_configs",
+      "note": "QA engineering configs exist; coverage of all canonical scientific runs remains incomplete.",
+      "paths": [
+        "QA052_BUILD_REPRODUCIBILITY.json",
+        "QA052_INHERITED_PYTHON_AUDIT.json",
+        "QA052_INSTALLED_WHEEL_REPLAY.json",
+        "QA052_SOURCE_REGRESSION.json",
+        "QA053_BUILD_REPRODUCIBILITY.json",
+        "QA053_INHERITED_PYTHON_AUDIT.json",
+        "QA053_INSTALLED_WHEEL_REPLAY.json",
+        "QA053_SOURCE_REGRESSION.json",
+        "QA054_BUILD_REPRODUCIBILITY.json",
+        "QA054_INHERITED_PYTHON_AUDIT.json",
+        "QA054_INSTALLED_WHEEL_REPLAY.json",
+        "QA054_METADATA_EVIDENCE.json",
+        "QA054_SOURCE_REGRESSION.json",
+        "QA055_BUILD_REPRODUCIBILITY.json",
+        "QA055_INHERITED_PYTHON_AUDIT.json",
+        "QA055_INSTALLED_CLEAN_ROOM_REPLAY.json",
+        "QA055_SOURCE_REGRESSION.json",
+        "ci/qa051_ci_matrix.json",
+        "ci/qa052_ci_contract.json",
+        "metadata/qa054_release_metadata_state.json",
+        "metadata/qa055_clean_room_contract.json"
+      ],
+      "status": "PRESENT"
+    },
+    {
+      "key": "citation_metadata",
+      "note": "Only a non-public citation template exists while QA054 metadata fields remain HOLD.",
+      "paths": [
+        "CITATION.cff.template"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "software_license",
+      "note": "License policy exists, but no software license has been selected.",
+      "paths": [
+        "LICENSE_POLICY.md"
+      ],
+      "status": "HOLD"
+    },
+    {
+      "key": "data_rights_provenance",
+      "note": "A complete source/data provenance and redistribution-rights catalog is not yet frozen.",
+      "paths": [],
+      "status": "HOLD"
+    },
+    {
+      "key": "changelog_release_notes",
+      "note": "CHANGELOG/release notes are not yet frozen.",
+      "paths": [],
+      "status": "HOLD"
+    },
+    {
+      "key": "checksums",
+      "note": "Checkpoint-level SHA-256 manifest exists.",
+      "paths": [
+        "SHA256SUMS.txt"
+      ],
+      "status": "PRESENT"
+    },
+    {
+      "key": "test_evidence",
+      "note": "QA test suite and execution evidence are present.",
+      "paths": [
+        "02_TESTS/test_qa029_deposition_core.py",
+        "02_TESTS/test_qa030a_aerodynamic_resistance.py",
+        "02_TESTS/test_qa030b_gas_quasi_laminar_resistance.py",
+        "02_TESTS/test_qa030c_surface_resistance.py",
+        "02_TESTS/test_qa030d_stomatal_physiology.py",
+        "02_TESTS/test_qa030e_aerosol_collection_efficiencies.py",
+        "02_TESTS/test_qa030f_particle_physics.py",
+        "02_TESTS/test_qa030g_rebound_surface_state.py",
+        "02_TESTS/test_qa030h_integrated_physical_audit.py",
+        "02_TESTS/test_qa031_surface_abstraction.py",
+        "02_TESTS/test_qa032_gas_deposition.py",
+        "02_TESTS/test_qa033_bidirectional_exchange.py",
+        "02_TESTS/test_qa034_aerosol_deposition.py",
+        "02_TESTS/test_qa035_aerosol_size_distributions.py",
+        "02_TESTS/test_qa036_boundary_coupling.py",
+        "02_TESTS/test_qa037_typed_spectral_boundary_operator.py",
+        "02_TESTS/test_qa038_gravitational_settling_transport.py",
+        "02_TESTS/test_qa039_global_mass_conservation.py",
+        "02_TESTS/test_qa040_ermak_analytic_benchmark.py",
+        "02_TESTS/test_qa041_variable_coefficient_cross_discretization.py",
+        "02_TESTS/test_qa042_robustness_campaign.py",
+        "02_TESTS/test_qa043_transient_variable_coefficient_benchmark.py",
+        "02_TESTS/test_qa044_transient_multi_regime_inverse_laplace_robustness.py",
+        "02_TESTS/test_qa045_validation_claim_envelope.py",
+        "02_TESTS/test_qa046_target_free_dimensioned_local_sensitivity.py",
+        "02_TESTS/test_qa047_parametric_uncertainty_propagation.py",
+        "02_TESTS/test_qa048_global_sensitivity_interactions.py",
+        "02_TESTS/test_qa049_regime_model_form_comparison.py",
+        "02_TESTS/test_qa050_engineering_reproducibility_baseline.py",
+        "02_TESTS/test_qa051_environment_ci_matrix.py",
+        "02_TESTS/test_qa052_ci_orchestration.py",
+        "02_TESTS/test_qa053_dependency_lock.py",
+        "02_TESTS/test_qa054_release_metadata.py",
+        "02_TESTS/test_qa055_clean_room_release_reproducibility.py",
+        "02_TESTS/test_qa056_documentation_provenance.py"
+      ],
+      "status": "PRESENT"
+    },
+    {
+      "key": "coverage_report",
+      "note": "No code coverage report is frozen.",
+      "paths": [],
+      "status": "HOLD"
+    },
+    {
+      "key": "runtime_environment_provenance",
+      "note": "Local runtime/dependency reference evidence exists.",
+      "paths": [
+        "requirements/qa051_reference_py313_linux_x86_64.txt",
+        "requirements/qa053_local_resolution_py313_linux_x86_64.json"
+      ],
+      "status": "PRESENT"
+    },
+    {
+      "key": "qa_claim_governance",
+      "note": "QA045 claim envelope remains present.",
+      "paths": [
+        "01_SRC/gilttpy/validation/claim_envelope.py"
+      ],
+      "status": "PRESENT"
+    }
+  ],
+  "scope": "documentation/provenance completeness audit; not archival release readiness"
+}

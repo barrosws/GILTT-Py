@@ -1,0 +1,27 @@
+{
+  "expected": 372,
+  "failed": 0,
+  "gate": "PASS_DOCUMENTATION_PROVENANCE_COMPLETENESS_AUDIT",
+  "import_path": "/mnt/data/qa056_installed_site/gilttpy/__init__.py",
+  "operational_timeout_event_preserved": true,
+  "outside_source_tree": true,
+  "partitions": {
+    "qa029_qa042": 210,
+    "qa043_qa045": 30,
+    "qa046": 12,
+    "qa047": 12,
+    "qa048": 12,
+    "qa049_qa056": 96
+  },
+  "passed": 372,
+  "runtime": {
+    "machine": "x86_64",
+    "mpmath": "1.3.0",
+    "numpy": "2.3.5",
+    "platform": "Linux",
+    "pytest": "9.0.2",
+    "python": "3.13.5",
+    "scipy": "1.17.0",
+    "threadpoolctl": "3.6.0"
+  }
+}

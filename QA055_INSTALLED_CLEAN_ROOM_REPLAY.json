@@ -1,0 +1,46 @@
+{
+  "cross_platform_proof": false,
+  "gate": "PASS_CLEAN_ROOM_RELEASE_REPRODUCIBILITY_CONTRACT",
+  "gilttpy_import": "/mnt/data/qa055_clean_room_site/gilttpy/__init__.py",
+  "hermetic_dependency_lock_proof": false,
+  "import_outside_governed_tree": true,
+  "install_target": "/mnt/data/qa055_clean_room_site",
+  "normalized_sdist_sha256": "3d9f68424d51fbb5e355b5c52bd32c1196443c40f0908ef31f91a53cb57c36d7",
+  "partitions": {
+    "qa029_qa042": 210,
+    "qa043_qa045": 30,
+    "qa046": 12,
+    "qa047": 12,
+    "qa048": 12,
+    "qa049": 12,
+    "qa050": 12,
+    "qa051": 12,
+    "qa052": 12,
+    "qa053": 12,
+    "qa054": 12,
+    "qa055": 12
+  },
+  "public_release_metadata_ready": false,
+  "runtime": {
+    "fingerprint": "21a1df82261dd0bdc7fe03f0f13117d3cb96e8b84bf3940af256d8c9a484847d",
+    "implementation": "CPython",
+    "machine": "x86_64",
+    "mpmath": "1.3.0",
+    "numpy": "2.3.5",
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+    "pytest": "9.0.2",
+    "python": "3.13.5",
+    "scipy": "1.17.0",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTHONHASHSEED": "0"
+    },
+    "threadpoolctl": "3.6.0"
+  },
+  "standard_pypa_build_frontend_local_status": "HOLD_PYPA_BUILD_FRONTEND_NOT_INSTALLED",
+  "total_failed": 0,
+  "total_passed": 360,
+  "wheel_sha256": "49c76e2de2bd5fd726b30686e397b1dd77b353b786dee7fd7b7c838c22dfc009"
+}

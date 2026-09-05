@@ -1,0 +1,13 @@
+{
+  "byte_identical": 104,
+  "changed": [],
+  "inherited_python_files": 104,
+  "missing": [],
+  "new_python_count": 3,
+  "new_python_files": [
+    "01_SRC/gilttpy/engineering/archival_readiness.py",
+    "01_SRC/gilttpy/validation/archival_readiness_campaign.py",
+    "02_TESTS/test_release_readiness_qa058.py"
+  ],
+  "pass": true
+}

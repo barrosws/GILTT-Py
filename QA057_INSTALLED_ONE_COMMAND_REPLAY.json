@@ -1,0 +1,129 @@
+{
+  "complete_replay": true,
+  "expected_total_tests": 384,
+  "gate": "PASS_OPERATIONAL_REPRODUCTION_DOCUMENTATION_CLOSURE",
+  "holds": [
+    "HOLD_MANUSCRIPT_TABLE_FIGURE_REPRODUCTION_ENTRYPOINT",
+    "HOLD_MACHINE_READABLE_CONFIG_COVERAGE_FOR_ALL_CANONICAL_SCIENTIFIC_RUNS",
+    "HOLD_DATA_AND_SOURCE_PROVENANCE_CATALOG_COMPLETENESS",
+    "HOLD_FULL_PACKAGE_COVERAGE_REPORT",
+    "HOLD_FINAL_PUBLIC_RELEASE_METADATA",
+    "HOLD_SOFTWARE_LICENSE_SELECTION",
+    "HOLD_ZENODO_ARCHIVAL_RECORD",
+    "HOLD_EXTERNAL_CI_MATRIX_EXECUTION",
+    "HOLD_STANDARD_PYPA_BUILD_FRONTEND_LOCAL_EXECUTION"
+  ],
+  "overall_result": {
+    "collected_tests": 384,
+    "expected_tests": 384,
+    "output_tail": "........................................................................ [ 18%]\n........................................................................ [ 37%]\n........................................................................ [ 56%]\n........................................................................ [ 75%]\n........................................................................ [ 93%]\n........................                                                 [100%]\n384 passed in 85.06s (0:01:25)\n",
+    "phase": "test",
+    "returncode": 0,
+    "status": "PASS"
+  },
+  "pass": true,
+  "plan_path": "/mnt/data/QA-057_OPERATIONAL_REPRODUCTION_DOCUMENTATION_CLOSURE/reproduction/qa057_qa_replay.toml",
+  "prohibitions": [
+    "PROHIBIT_QA_REPLAY_AS_MANUSCRIPT_OUTPUT_REPRODUCTION_PROOF",
+    "PROHIBIT_COVERAGE_PERCENTAGE_AS_SCIENTIFIC_VALIDATION",
+    "PROHIBIT_UNVERIFIED_DATA_REDISTRIBUTION_RIGHTS",
+    "PROHIBIT_UNRESOLVED_METADATA_AS_FINAL_RELEASE_METADATA",
+    "PROHIBIT_ENGINEERING_GATE_AS_SCIENTIFIC_VALIDATION",
+    "PROHIBIT_TARGET_TUNING"
+  ],
+  "project_root": "/mnt/data/QA-057_OPERATIONAL_REPRODUCTION_DOCUMENTATION_CLOSURE",
+  "results": [
+    {
+      "collected_tests": 210,
+      "expected_tests": 210,
+      "name": "qa029_qa042",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 30,
+      "expected_tests": 30,
+      "name": "qa043_qa045",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa046",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa047",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa048",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa049",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa050",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa051",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa052",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa053",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa054",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa055",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa056",
+      "status": "PASS"
+    },
+    {
+      "collected_tests": 12,
+      "expected_tests": 12,
+      "name": "qa057",
+      "status": "PASS"
+    }
+  ],
+  "scope": "QA replay evidence only; not manuscript table/figure reproduction",
+  "selected_partition": null,
+  "thread_environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  }
+}
