@@ -1,7 +1,6 @@
 include README.md
 include LICENSE
 include LICENSE_POLICY.md
-include CITATION.cff.template
 include CITATION.cff
 include AUTHORS.md
 include QA057_SCOPE_GOVERNANCE.md

@@ -100,7 +100,48 @@ jobs:
               target = f"{root}/{rel}"
               if target not in names:
                   raise SystemExit(f"missing public metadata from sdist: {target}")
-          print("sdist public metadata inclusion: PASS")
+          historical_template = f"{root}/CITATION.cff.template"
+          if historical_template in names:
+              raise SystemExit(
+                  "historical placeholder CITATION.cff.template must not be shipped in public sdist"
+              )
+          print("sdist active metadata inclusion / historical-template exclusion: PASS")
+          PY
+      - name: Verify wheel core metadata
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          with ZipFile(wheels[0]) as zf:
+              metadata_names = [
+                  name for name in zf.namelist()
+                  if name.endswith(".dist-info/METADATA")
+              ]
+              if len(metadata_names) != 1:
+                  raise SystemExit(
+                      f"expected exactly one wheel METADATA file, found {metadata_names}"
+                  )
+              text = zf.read(metadata_names[0]).decode("utf-8")
+
+          required = [
+              "Version: 2.0.0",
+              "BSD-3-Clause",
+              "Jorge Luís Braga Ribes",
+              "Maicon Nardino",
+              "Régis Sperotto de Quadros",
+              "Daniela Buske",
+              "Luís Carlos Timm",
+              "Willian Silva Barros",
+          ]
+          missing = [token for token in required if token not in text]
+          if missing:
+              raise SystemExit(f"wheel METADATA missing reviewed release fields: {missing}")
+          print("wheel core metadata: PASS")
           PY
       - name: Install built wheel
         shell: bash

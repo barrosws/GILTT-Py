@@ -48,3 +48,29 @@ The release-transition suite remains exactly 396 selected tests:
 This transition changes public release metadata and packaging only. It does not
 change any scientific equation, physical closure, numerical tolerance,
 benchmark target, uncertainty design, claim envelope, or NO TARGET TUNING rule.
+
+
+## STEP F6C independent pre-merge audit
+
+The independent pre-merge audit identified four release-engineering corrections
+before integration into `main`:
+
+1. current/canonical CI run identifiers must not be embedded as self-referential
+   truth inside the commit they are intended to certify;
+2. reviewed version, software authorship, explicit ORCID-omission policy, and
+   BSD-3-Clause licensing must be reflected consistently in archival-readiness
+   semantics;
+3. the historical placeholder `CITATION.cff.template` remains in Git provenance
+   but is excluded from the public source distribution;
+4. the built wheel is inspected directly to confirm that version, license, and
+   all six reviewed software authors are serialized into wheel `METADATA`.
+
+The versioned F6 state therefore records only historical pre-merge CI evidence
+for an already-existing commit plus the static rule that exact release-SHA CI
+must be verified externally before tag creation. The post-merge canonical
+GitHub Actions run ID is recorded in the external release audit, not written
+back into the release commit, avoiding recursive commit/run invalidation.
+
+These corrections are release-governance and packaging hardening only. They do
+not alter scientific source equations, physical closures, numerical tolerances,
+benchmark targets, QA043/QA044 policies, uncertainty design, or claim envelopes.

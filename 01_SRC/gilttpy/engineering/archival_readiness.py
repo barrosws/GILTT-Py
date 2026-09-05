@@ -112,6 +112,27 @@ def audit_archival_readiness(project_root: str | Path) -> tuple[ArchivalEvidence
         else {}
     )
     version_doi=f6_state.get("zenodo_version_doi")
+    with (root/"pyproject.toml").open("rb") as f:
+        project=tomllib.load(f)["project"]
+    project_authors=[str(a.get("name","")) for a in project.get("authors",[])]
+    reviewed_authors=[str(x) for x in f6_state.get("software_authorship",[])]
+    version_ready=bool(f6_state.get("release_version")) and str(f6_state.get("release_version")) == version
+    authorship_ready=(
+        bool(f6_state.get("software_authorship_reviewed"))
+        and bool(reviewed_authors)
+        and project_authors == reviewed_authors
+    )
+    orcid_review_closed=(
+        f6_state.get("author_orcids") is not None
+        or f6_state.get("orcid_policy") == "OMITTED_UNTIL_EXPLICITLY_SUPPLIED_OR_VERIFIED"
+    )
+    software_authorship_ready=authorship_ready and orcid_review_closed
+    project_license=str(project.get("license",""))
+    license_ready=(
+        license_file
+        and bool(f6_state.get("software_license_spdx"))
+        and str(f6_state.get("software_license_spdx")) == project_license
+    )
     return (
         ArchivalEvidence("distribution_reproducibility", ReadinessStatus.READY if qa057_build else ReadinessStatus.HOLD, ("QA057_BUILD_REPRODUCIBILITY.json",) if qa057_build else (), "QA057 deterministic distribution evidence is frozen locally."),
         ArchivalEvidence("operational_qa_replay", ReadinessStatus.READY if qa057_source and plan else ReadinessStatus.HOLD, tuple(x for x in ("QA057_SOURCE_ONE_COMMAND_REPLAY.json","reproduction/qa057_qa_replay.toml") if has(x)), "QA057 one-command QA replay is frozen; this is not manuscript-output reproduction."),
@@ -119,9 +140,42 @@ def audit_archival_readiness(project_root: str | Path) -> tuple[ArchivalEvidence
         ArchivalEvidence("runtime_environment_provenance", ReadinessStatus.READY if runtime else ReadinessStatus.HOLD, ("requirements/qa053_local_resolution_py313_linux_x86_64.json",) if runtime else (), "Executed local runtime/dependency provenance is present; cross-platform lock remains separate HOLD."),
         ArchivalEvidence("installation_reproduction_docs", ReadinessStatus.READY if install and repro else ReadinessStatus.HOLD, tuple(x for x in ("docs/INSTALLATION_QUICKSTART.md","docs/REPRODUCIBILITY.md") if has(x)), "Operational installation/reproduction instructions are present."),
         ArchivalEvidence("development_change_history", ReadinessStatus.READY if change else ReadinessStatus.HOLD, tuple(x for x in ("docs/CHANGELOG.md","docs/RELEASE_NOTES_DEV.md") if has(x)), "Development change history is present but is not a public release."),
-        ArchivalEvidence("public_software_version", ReadinessStatus.HOLD, ("pyproject.toml",), f"Current version is {version}; public release version remains an explicit decision."),
-        ArchivalEvidence("software_authorship_orcids", ReadinessStatus.HOLD, ("metadata/qa054_release_metadata_state.json",) if has("metadata/qa054_release_metadata_state.json") else (), "Software authorship and ORCIDs remain under explicit review and may not be inferred."),
-        ArchivalEvidence("software_license", ReadinessStatus.READY if license_file else ReadinessStatus.HOLD, ("LICENSE",) if license_file else (("LICENSE_POLICY.md",) if has("LICENSE_POLICY.md") else ()), "License policy exists; no software license has been selected."),
+        ArchivalEvidence(
+            "public_software_version",
+            ReadinessStatus.READY if version_ready else ReadinessStatus.HOLD,
+            tuple(x for x in ("pyproject.toml","metadata/step_f6_public_metadata_state.json") if has(x)),
+            (
+                f"Reviewed public software version {version} is consistent across project and F6 state."
+                if version_ready
+                else f"Current project version is {version}; reviewed public-version evidence is incomplete or inconsistent."
+            ),
+        ),
+        ArchivalEvidence(
+            "software_authorship_orcids",
+            ReadinessStatus.READY if software_authorship_ready else ReadinessStatus.HOLD,
+            tuple(
+                x for x in (
+                    "AUTHORS.md","CITATION.cff","pyproject.toml",
+                    "metadata/step_f6_public_metadata_state.json",
+                )
+                if has(x)
+            ),
+            (
+                "Software authorship is explicitly reviewed and consistent; ORCID omission is an explicit reviewed policy."
+                if software_authorship_ready and f6_state.get("author_orcids") is None
+                else "Software authorship/ORCID review evidence is incomplete or inconsistent."
+            ),
+        ),
+        ArchivalEvidence(
+            "software_license",
+            ReadinessStatus.READY if license_ready else ReadinessStatus.HOLD,
+            tuple(x for x in ("LICENSE","pyproject.toml","metadata/step_f6_public_metadata_state.json") if has(x)),
+            (
+                f"Reviewed {project_license} software license is consistent across LICENSE, project metadata, and F6 state."
+                if license_ready
+                else "Reviewed software-license evidence is incomplete or inconsistent."
+            ),
+        ),
         ArchivalEvidence(
             "citation_doi_metadata",
             ReadinessStatus.READY if final_cff and version_doi else ReadinessStatus.HOLD,
@@ -145,7 +199,12 @@ def audit_archival_readiness(project_root: str | Path) -> tuple[ArchivalEvidence
         ArchivalEvidence("scientific_config_coverage", ReadinessStatus.HOLD, ("reproduction/qa057_qa_replay.toml",) if plan else (), "QA replay config exists; complete configs for manuscript-associated scientific runs remain HOLD."),
         ArchivalEvidence("manuscript_output_reproduction", ReadinessStatus.HOLD, (), "No frozen end-to-end manuscript table/figure regeneration proof exists yet."),
         ArchivalEvidence("full_package_coverage", ReadinessStatus.HOLD, ("coverage/qa057_coverage.json",) if coverage else (), "Only QA057 operational-layer coverage is frozen; full-package coverage remains HOLD."),
-        ArchivalEvidence("external_ci_matrix", ReadinessStatus.HOLD, (), "Unexecuted Python/platform cells may not be promoted to PASS."),
+        ArchivalEvidence(
+            "external_ci_matrix",
+            ReadinessStatus.HOLD,
+            ("metadata/step_f6_public_metadata_state.json",) if f6_state_path.exists() else (),
+            "Repository-local readiness does not self-certify external CI; exact release-SHA CI evidence must be established by external readback before tag.",
+        ),
         ArchivalEvidence("cross_platform_hermetic_lock", ReadinessStatus.HOLD, (), "Local dependency resolution is not a universal cross-platform hermetic lock."),
         ArchivalEvidence("zenodo_archival_record", ReadinessStatus.HOLD, (), "Zenodo deposition is downstream of final release audit and metadata decisions."),
     )

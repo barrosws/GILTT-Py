@@ -80,6 +80,11 @@ def test_step_f6_02_active_citation_is_placeholder_free_and_consistent():
     assert "date-released:" not in text.lower()
     assert not any(x in text for x in ("TO_REVIEW", "TO_SELECT", "TO_RELEASE"))
 
+    manifest = (ROOT / "MANIFEST.in").read_text(encoding="utf-8")
+    assert "include CITATION.cff\n" in manifest
+    assert "include AUTHORS.md\n" in manifest
+    assert "include CITATION.cff.template" not in manifest
+
 
 def test_step_f6_03_release_state_records_real_evidence_without_identifier_inference():
     state = _f6_state()
@@ -87,9 +92,15 @@ def test_step_f6_03_release_state_records_real_evidence_without_identifier_infer
     assert state["software_license_spdx"] == "BSD-3-Clause"
     assert state["repository_created"] is True
     assert state["repository_url"] == "https://github.com/barrosws/GILTT-Py"
-    assert state["external_ci_complete"] is True
-    assert state["external_ci_canonical_main_run_id"] == 33968524183
-    assert state["external_ci_canonical_main_sha"] == "6fe5b361c92d3634364f825014430ed3300ea7d4"
+    assert state["canonical_main_ci_required_before_tag"] is True
+    assert state["ci_evidence_policy"].startswith("EXTERNAL_READBACK_FOR_EXACT_RELEASE_SHA")
+    pre = state["pre_merge_ci_evidence"]
+    assert pre["branch"] == "step-f6b1-windows-utf8-metadata"
+    assert pre["commit_sha"] == "8c805ccb0e9a0df3ef1056886403997aef9728ea"
+    assert pre["release_ci_run_id"] == 33980580933
+    assert pre["release_ci_conclusion"] == "success"
+    assert pre["citation_metadata"] == "PASS"
+    assert pre["matrix"] == "12/12 PASS"
     assert state["author_orcids"] is None
     assert state["zenodo_version_doi"] is None
     assert state["zenodo_concept_doi"] is None
@@ -98,7 +109,12 @@ def test_step_f6_03_release_state_records_real_evidence_without_identifier_infer
 
 def test_step_f6_04_active_cff_does_not_falsely_resolve_doi_archival_role():
     m = evidence_map(audit_archival_readiness(ROOT))
+    assert m["public_software_version"].status is ReadinessStatus.READY
+    assert m["software_authorship_orcids"].status is ReadinessStatus.READY
     assert m["software_license"].status is ReadinessStatus.READY
     assert m["citation_doi_metadata"].status is ReadinessStatus.HOLD
+    assert m["external_ci_matrix"].status is ReadinessStatus.HOLD
     assert "CITATION.cff" in m["citation_doi_metadata"].paths
-    assert "citation_doi_metadata" in public_release_blockers(m.values())
+    blockers = public_release_blockers(m.values())
+    assert "citation_doi_metadata" in blockers
+    assert "external_ci_matrix" in blockers

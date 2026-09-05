@@ -1,12 +1,19 @@
 {
   "author_orcids": null,
+  "canonical_main_ci_required_before_tag": true,
+  "ci_evidence_policy": "EXTERNAL_READBACK_FOR_EXACT_RELEASE_SHA; DO_NOT EMBED_SELF_REFERENTIAL_CURRENT_RUN_ID",
   "citation_cff_active": true,
   "citation_cff_schema_version": "1.2.0",
-  "external_ci_canonical_main_run_id": 33968524183,
-  "external_ci_canonical_main_sha": "6fe5b361c92d3634364f825014430ed3300ea7d4",
-  "external_ci_complete": true,
   "gate": "STEP_F6_PUBLIC_METADATA_AUTHORSHIP_ACTIVATED",
   "orcid_policy": "OMITTED_UNTIL_EXPLICITLY_SUPPLIED_OR_VERIFIED",
+  "pre_merge_ci_evidence": {
+    "branch": "step-f6b1-windows-utf8-metadata",
+    "citation_metadata": "PASS",
+    "commit_sha": "8c805ccb0e9a0df3ef1056886403997aef9728ea",
+    "matrix": "12/12 PASS",
+    "release_ci_conclusion": "success",
+    "release_ci_run_id": 33980580933
+  },
   "prohibitions": [
     "NO_GUESSED_ORCID",
     "NO_FABRICATED_DOI",
