@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use GILTT-Py 2.0 in your work, please cite the software using this metadata."
+title: "GILTT-Py 2.0"
+type: software
+version: 2.0.0
+authors:
+  - family-names: "Braga Ribes"
+    given-names: "Jorge Luís"
+  - family-names: "Nardino"
+    given-names: "Maicon"
+  - family-names: "Sperotto de Quadros"
+    given-names: "Régis"
+  - family-names: "Buske"
+    given-names: "Daniela"
+  - family-names: "Timm"
+    given-names: "Luís Carlos"
+  - family-names: "Barros"
+    given-names: "Willian Silva"
+license: BSD-3-Clause
+repository-code: "https://github.com/barrosws/GILTT-Py"
