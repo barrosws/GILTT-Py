@@ -1,0 +1,317 @@
+name: qa043-openblas-kernel-causal-crossover
+
+on:
+  push:
+    branches:
+      - step-f5e-openblas-kernel-crossover
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  crossover:
+    name: OpenBLAS crossover / Ubuntu 24.04 / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ubuntu-24.04
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Build and install branch wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build pytest threadpoolctl
+          python -m build --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          subprocess.check_call([
+              sys.executable,
+              "-m",
+              "pip",
+              "install",
+              "--force-reinstall",
+              str(wheels[0]),
+          ])
+          PY
+
+      - name: Write diagnostic probe
+        shell: bash
+        run: |
+          cat > step_f5e_probe.py <<'PY'
+          import hashlib
+          import json
+          import platform
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("02_TESTS").resolve()))
+
+          import mpmath
+          import numpy as np
+          import scipy
+          import threadpoolctl
+
+          from test_qa043_transient_variable_coefficient_benchmark import _exact_spectral
+          from gilttpy.validation.transient_variable_coefficient import (
+              spectral_dehoog_concentration_from_inlet,
+              spectral_laplace_concentration_from_inlet,
+          )
+
+          if len(sys.argv) != 2:
+              raise SystemExit("usage: step_f5e_probe.py <native|haswell>")
+          label = sys.argv[1]
+          if label not in {"native", "haswell"}:
+              raise SystemExit(f"unsupported label {label!r}")
+
+          c, system, y0 = _exact_spectral()
+          x = 4.0
+          z = 3.0
+          times = (2.1, 2.2, 2.3, 2.75, 3.0, 5.0)
+          degrees = (26, 28)
+
+          def envelope(errors):
+              return {
+                  "e_t2_1_lt_2e-4": errors[0] < 2e-4,
+                  "e_t2_2_lt_1e-5": errors[1] < 1e-5,
+                  "e_t2_3_lt_1e-6": errors[2] < 1e-6,
+                  "max_far_lt_1e-8": max(errors[3:]) < 1e-8,
+                  "near_front_monotone": errors[2] < errors[1] < errors[0],
+              }
+
+          degree_results = []
+          for degree in degrees:
+              rows = []
+              for t in times:
+                  got = spectral_dehoog_concentration_from_inlet(
+                      system,
+                      y0,
+                      x,
+                      z,
+                      t,
+                      degree=degree,
+                      working_dps=40,
+                  )
+                  ref = float(c.exact_concentration(x, [z], t)[0])
+                  rows.append({
+                      "t": t,
+                      "got": float(got),
+                      "reference": ref,
+                      "relative_error": float(abs(got-ref)/ref),
+                  })
+              errors = [r["relative_error"] for r in rows]
+              checks = envelope(errors)
+              degree_results.append({
+                  "degree": degree,
+                  "working_dps": 40,
+                  "rows": rows,
+                  "max_far_error": max(errors[3:]),
+                  "checks": checks,
+                  "all_checks_pass": all(checks.values()),
+              })
+
+          transform_points = []
+          for s in (0.2+0.3j, 1.0+2.0j, 0.05+0.1j):
+              got = spectral_laplace_concentration_from_inlet(
+                  system, y0, x, z, s
+              )
+              ref = complex(c.exact_laplace_concentration(x, [z], s)[0])
+              transform_points.append({
+                  "s_real": s.real,
+                  "s_imag": s.imag,
+                  "spectral_real": got.real,
+                  "spectral_imag": got.imag,
+                  "exact_real": ref.real,
+                  "exact_imag": ref.imag,
+                  "relative_transform_error": float(abs(got-ref)/abs(ref)),
+              })
+
+          info = threadpoolctl.threadpool_info()
+          openblas_arch = sorted({
+              str(item.get("architecture", ""))
+              for item in info
+              if item.get("internal_api") == "openblas"
+          })
+          if label == "haswell":
+              if not openblas_arch:
+                  raise SystemExit("forced-Haswell probe did not expose an OpenBLAS runtime")
+              if not any(a.lower() == "haswell" for a in openblas_arch):
+                  raise SystemExit(
+                      f"OPENBLAS_CORETYPE=Haswell was not honored; architectures={openblas_arch}"
+                  )
+
+          arrays = {
+              "M": np.asarray(system.M, dtype=np.float64),
+              "operator": np.asarray(system.operator, dtype=np.float64),
+              "y0": np.asarray(y0, dtype=np.float64),
+          }
+          array_sha256 = {
+              name: hashlib.sha256(arr.tobytes(order="C")).hexdigest()
+              for name, arr in arrays.items()
+          }
+          np.savez(
+              f"step_f5e_{label}_assembly.npz",
+              M=arrays["M"],
+              operator=arrays["operator"],
+              y0=arrays["y0"],
+          )
+
+          m = arrays["M"]
+          ideal_mass = c.wind_m_s*np.eye(system.n_modes, dtype=np.float64)
+
+          payload = {
+              "schema": "gilttpy.step-f5e.openblas-kernel-causal-crossover.v1",
+              "label": label,
+              "OPENBLAS_CORETYPE": __import__("os").environ.get("OPENBLAS_CORETYPE"),
+              "platform": platform.platform(),
+              "machine": platform.machine(),
+              "python": platform.python_version(),
+              "versions": {
+                  "numpy": np.__version__,
+                  "scipy": scipy.__version__,
+                  "mpmath": mpmath.__version__,
+                  "threadpoolctl": threadpoolctl.__version__,
+              },
+              "threadpools": info,
+              "openblas_architectures": openblas_arch,
+              "array_sha256": array_sha256,
+              "assembly_fingerprints": {
+                  "M_minus_constant_wind_identity_max_abs":
+                      float(np.max(np.abs(m-ideal_mass))),
+                  "M_condition_2": float(np.linalg.cond(m)),
+                  "operator_norm_2": float(np.linalg.norm(arrays["operator"], 2)),
+                  "operator_max_abs": float(np.max(np.abs(arrays["operator"]))),
+                  "y0_norm_2": float(np.linalg.norm(arrays["y0"])),
+              },
+              "transform_points": transform_points,
+              "degree_results": degree_results,
+              "passing_degrees": [
+                  r["degree"] for r in degree_results if r["all_checks_pass"]
+              ],
+          }
+
+          Path(f"step_f5e_{label}.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps({
+              "label": label,
+              "OPENBLAS_CORETYPE": payload["OPENBLAS_CORETYPE"],
+              "openblas_architectures": openblas_arch,
+              "array_sha256": array_sha256,
+              "assembly_fingerprints": payload["assembly_fingerprints"],
+              "passing_degrees": payload["passing_degrees"],
+              "degree_summary": [
+                  {
+                      "degree": r["degree"],
+                      "max_far_error": r["max_far_error"],
+                      "failed_checks": [
+                          k for k,v in r["checks"].items() if not v
+                      ],
+                  }
+                  for r in degree_results
+              ],
+              "transform_points": transform_points,
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Run native OpenBLAS probe
+        shell: bash
+        run: |
+          env -u OPENBLAS_CORETYPE python step_f5e_probe.py native
+
+      - name: Run forced Haswell OpenBLAS probe
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Haswell python step_f5e_probe.py haswell
+
+      - name: Compare native and forced-Haswell assemblies
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import platform
+          import sys
+          from pathlib import Path
+
+          import numpy as np
+
+          native = np.load("step_f5e_native_assembly.npz")
+          haswell = np.load("step_f5e_haswell_assembly.npz")
+
+          array_diffs = {}
+          for key in ("M", "operator", "y0"):
+              a = native[key]
+              b = haswell[key]
+              array_diffs[key] = {
+                  "shape": list(a.shape),
+                  "max_abs_difference": float(np.max(np.abs(a-b))),
+                  "l2_difference": float(np.linalg.norm(a-b)),
+                  "byte_identical": bool(a.tobytes(order="C") == b.tobytes(order="C")),
+              }
+
+          native_json = json.loads(Path("step_f5e_native.json").read_text())
+          haswell_json = json.loads(Path("step_f5e_haswell.json").read_text())
+
+          payload = {
+              "schema": "gilttpy.step-f5e.native-vs-haswell-comparison.v1",
+              "platform": platform.platform(),
+              "python": platform.python_version(),
+              "native_openblas_architectures":
+                  native_json["openblas_architectures"],
+              "forced_haswell_openblas_architectures":
+                  haswell_json["openblas_architectures"],
+              "array_differences": array_diffs,
+              "native_passing_degrees": native_json["passing_degrees"],
+              "forced_haswell_passing_degrees":
+                  haswell_json["passing_degrees"],
+              "degree26_max_far_native":
+                  next(r for r in native_json["degree_results"] if r["degree"] == 26)["max_far_error"],
+              "degree26_max_far_haswell":
+                  next(r for r in haswell_json["degree_results"] if r["degree"] == 26)["max_far_error"],
+              "degree28_max_far_native":
+                  next(r for r in native_json["degree_results"] if r["degree"] == 28)["max_far_error"],
+              "degree28_max_far_haswell":
+                  next(r for r in haswell_json["degree_results"] if r["degree"] == 28)["max_far_error"],
+          }
+
+          safe_py = f"{sys.version_info.major}{sys.version_info.minor}"
+          Path(f"step_f5e_comparison_py{safe_py}.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload STEP F5E cell evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step-f5e-ubuntu-py${{ matrix.python }}
+          path: |
+            step_f5e_native.json
+            step_f5e_haswell.json
+            step_f5e_comparison_*.json
+            step_f5e_native_assembly.npz
+            step_f5e_haswell_assembly.npz
+          if-no-files-found: error
