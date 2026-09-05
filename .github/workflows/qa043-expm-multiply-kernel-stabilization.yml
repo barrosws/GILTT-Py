@@ -1,0 +1,323 @@
+name: qa043-expm-multiply-kernel-stabilization
+
+on:
+  push:
+    branches:
+      - step-f5g-expm-multiply-stabilization
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stabilize:
+    name: expm_multiply stabilization / Ubuntu 24.04 / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.14"]
+    runs-on: ubuntu-24.04
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Build and install branch wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build pytest threadpoolctl
+          python -m build --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install",
+              "--force-reinstall", str(wheels[0]),
+          ])
+          PY
+
+      - name: Write fixed-assembly stabilization probe
+        shell: bash
+        run: |
+          cat > step_f5g_prepare.py <<'PY'
+          import json
+          import os
+          import platform
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("02_TESTS").resolve()))
+
+          import numpy as np
+          import threadpoolctl
+
+          from test_qa043_transient_variable_coefficient_benchmark import _exact_spectral
+          from gilttpy.basis.shifted_legendre import values as legendre_values
+
+          info = threadpoolctl.threadpool_info()
+          archs = sorted({
+              str(x.get("architecture", ""))
+              for x in info if x.get("internal_api") == "openblas"
+          })
+          if not archs or not all(a.lower() == "haswell" for a in archs):
+              raise SystemExit(f"prepare requires Haswell; observed {archs}")
+
+          c, system, y0 = _exact_spectral()
+          z = 3.0
+          phi = legendre_values(
+              np.asarray([z]),
+              h=system.h,
+              n_modes=system.n_modes,
+              z_lower=system.z_lower,
+          )[0].astype(np.float64)
+
+          times = np.asarray([2.1, 2.2, 2.3, 2.75, 3.0, 5.0], dtype=np.float64)
+          references = np.asarray(
+              [float(c.exact_concentration(4.0, [z], float(t))[0]) for t in times],
+              dtype=np.float64,
+          )
+
+          np.savez(
+              "step_f5g_fixed_assembly.npz",
+              M=np.asarray(system.M, dtype=np.float64),
+              operator=np.asarray(system.operator, dtype=np.float64),
+              y0=np.asarray(y0, dtype=np.float64),
+              phi=phi,
+              times=times,
+              references=references,
+          )
+
+          Path("step_f5g_prepare.json").write_text(
+              json.dumps({
+                  "schema": "gilttpy.step-f5g.prepare.v1",
+                  "python": platform.python_version(),
+                  "requested_coretype": os.environ.get("OPENBLAS_CORETYPE"),
+                  "observed_openblas_architectures": archs,
+              }, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          cat > step_f5g_probe.py <<'PY'
+          import json
+          import os
+          import platform
+          import sys
+          from pathlib import Path
+
+          import mpmath
+          import numpy as np
+          import scipy
+          import threadpoolctl
+          from scipy.linalg import expm, solve
+          from scipy.sparse.linalg import expm_multiply
+
+          from gilttpy.numerics.inverse_laplace_modern import dehoog_inverse_laplace
+
+          if len(sys.argv) != 2:
+              raise SystemExit("usage: step_f5g_probe.py <haswell|sandybridge>")
+          label = sys.argv[1]
+          expected = {
+              "haswell": "Haswell",
+              "sandybridge": "Sandybridge",
+          }[label]
+
+          info = threadpoolctl.threadpool_info()
+          archs = sorted({
+              str(x.get("architecture", ""))
+              for x in info if x.get("internal_api") == "openblas"
+          })
+          if not archs or not all(a.lower() == expected.lower() for a in archs):
+              raise SystemExit(f"requested {expected}; observed {archs}")
+
+          d = np.load("step_f5g_fixed_assembly.npz")
+          M = d["M"].astype(np.complex128)
+          operator = d["operator"].astype(np.complex128)
+          y0 = d["y0"].astype(np.complex128)
+          phi = d["phi"].astype(np.float64)
+          times = d["times"]
+          references = d["references"]
+          I = np.eye(M.shape[0], dtype=np.complex128)
+          x = 4.0
+
+          def transform(s, method):
+              s = complex(s)
+              generator = -solve(
+                  M,
+                  operator + s*I,
+                  assume_a="gen",
+                  check_finite=True,
+              )
+              rhs = y0/s
+              if method == "full_expm":
+                  coeff = expm(generator*x) @ rhs
+              elif method == "expm_multiply":
+                  coeff = expm_multiply(generator*x, rhs)
+              else:
+                  raise RuntimeError(method)
+              return complex(phi @ coeff)
+
+          def envelope(errors):
+              return {
+                  "e_t2_1_lt_2e-4": errors[0] < 2e-4,
+                  "e_t2_2_lt_1e-5": errors[1] < 1e-5,
+                  "e_t2_3_lt_1e-6": errors[2] < 1e-6,
+                  "max_far_lt_1e-8": max(errors[3:]) < 1e-8,
+                  "near_front_monotone": errors[2] < errors[1] < errors[0],
+              }
+
+          results = {}
+          for method in ("full_expm", "expm_multiply"):
+              degree_results = []
+              for degree in (24, 26, 28):
+                  rows = []
+                  for t, ref in zip(times, references):
+                      got = dehoog_inverse_laplace(
+                          lambda s, method=method: transform(s, method),
+                          float(t),
+                          degree=degree,
+                          working_dps=40,
+                      )
+                      rel = float(abs(got-float(ref))/float(ref))
+                      rows.append({
+                          "t": float(t),
+                          "got": float(got),
+                          "reference": float(ref),
+                          "relative_error": rel,
+                      })
+                  errors = [r["relative_error"] for r in rows]
+                  checks = envelope(errors)
+                  degree_results.append({
+                      "degree": degree,
+                      "rows": rows,
+                      "checks": checks,
+                      "max_far_error": max(errors[3:]),
+                      "all_checks_pass": all(checks.values()),
+                  })
+              results[method] = {
+                  "degree_results": degree_results,
+                  "passing_degrees": [
+                      r["degree"] for r in degree_results if r["all_checks_pass"]
+                  ],
+              }
+
+          payload = {
+              "schema": "gilttpy.step-f5g.expm-multiply-kernel-stabilization.v1",
+              "label": label,
+              "python": platform.python_version(),
+              "platform": platform.platform(),
+              "versions": {
+                  "numpy": np.__version__,
+                  "scipy": scipy.__version__,
+                  "mpmath": mpmath.__version__,
+                  "threadpoolctl": threadpoolctl.__version__,
+              },
+              "requested_coretype": os.environ.get("OPENBLAS_CORETYPE"),
+              "observed_openblas_architectures": archs,
+              "results": results,
+          }
+
+          Path(f"step_f5g_{label}.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          PY
+
+          cat > step_f5g_compare.py <<'PY'
+          import json
+          import platform
+          import sys
+          from pathlib import Path
+
+          h = json.loads(Path("step_f5g_haswell.json").read_text())
+          s = json.loads(Path("step_f5g_sandybridge.json").read_text())
+
+          out = {
+              "schema": "gilttpy.step-f5g.kernel-comparison.v1",
+              "python": platform.python_version(),
+              "methods": {},
+          }
+
+          for method in ("full_expm", "expm_multiply"):
+              per_degree = {}
+              for degree in (24, 26, 28):
+                  hr = next(
+                      r for r in h["results"][method]["degree_results"]
+                      if r["degree"] == degree
+                  )
+                  sr = next(
+                      r for r in s["results"][method]["degree_results"]
+                      if r["degree"] == degree
+                  )
+                  per_degree[str(degree)] = {
+                      "haswell_all_checks_pass": hr["all_checks_pass"],
+                      "sandybridge_all_checks_pass": sr["all_checks_pass"],
+                      "haswell_max_far_error": hr["max_far_error"],
+                      "sandybridge_max_far_error": sr["max_far_error"],
+                      "max_absolute_difference_in_relative_error": max(
+                          abs(a["relative_error"]-b["relative_error"])
+                          for a,b in zip(hr["rows"], sr["rows"])
+                      ),
+                      "same_pass_fail": hr["all_checks_pass"] == sr["all_checks_pass"],
+                  }
+              out["methods"][method] = {
+                  "haswell_passing_degrees":
+                      h["results"][method]["passing_degrees"],
+                  "sandybridge_passing_degrees":
+                      s["results"][method]["passing_degrees"],
+                  "degrees": per_degree,
+              }
+
+          Path(
+              f"step_f5g_comparison_py"
+              f"{sys.version_info.major}{sys.version_info.minor}.json"
+          ).write_text(
+              json.dumps(out, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(out, indent=2, sort_keys=True))
+          PY
+
+      - name: Prepare fixed assembly under Haswell
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Haswell python step_f5g_prepare.py
+
+      - name: Evaluate full expm and expm_multiply under Haswell
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Haswell python step_f5g_probe.py haswell
+
+      - name: Evaluate full expm and expm_multiply under Sandybridge
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Sandybridge python step_f5g_probe.py sandybridge
+
+      - name: Compare kernel sensitivity
+        shell: bash
+        run: |
+          python step_f5g_compare.py
+
+      - name: Upload STEP F5G evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step-f5g-ubuntu-py${{ matrix.python }}
+          path: |
+            step_f5g_*.json
+            step_f5g_fixed_assembly.npz
+          if-no-files-found: error
