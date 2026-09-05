@@ -1,0 +1,293 @@
+name: qa043-qa044-degree-median-multiregime
+
+on:
+  push:
+    branches:
+      - step-f5i-degree-median-multiregime
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    name: degree-median multiregime / ${{ matrix.os }} / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ${{ matrix.os }}
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Build and install branch wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build pytest threadpoolctl
+          python -m build --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install",
+              "--force-reinstall", str(wheels[0]),
+          ])
+          PY
+
+      - name: Validate preregistered median across QA043 and QA044 regimes
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import math
+          import platform
+          import sys
+          import time
+          from pathlib import Path
+
+          import mpmath
+          import numpy as np
+          import scipy
+          import threadpoolctl
+
+          sys.path.insert(0, str(Path("02_TESTS").resolve()))
+
+          from gilttpy.numerics.inverse_laplace_modern import dehoog_inverse_laplace
+          from gilttpy.solvers.lower_boundary_operator import LinearRobinBoundaryCondition
+          from gilttpy.solvers.settling_2d_legendre import assemble_settling_legendre_system
+          from gilttpy.validation.inverse_laplace_robustness import (
+              exponential_case,
+              delayed_step_case,
+              delayed_exponential_case,
+              damped_sine_case,
+              damped_cosine_case,
+              diffusion_erfc_case,
+          )
+          from gilttpy.validation.transient_variable_coefficient import (
+              ExactTransientVariableDiffusivityCase,
+              spectral_laplace_concentration_from_inlet,
+          )
+          from gilttpy.validation.variable_coefficient import project_profile_to_legendre
+          from test_qa043_transient_variable_coefficient_benchmark import (
+              _exact_spectral,
+              _full_variable_spectral,
+          )
+          from gilttpy.validation.variable_coefficient import (
+              spectral_solution_from_initial_coefficients,
+          )
+          from gilttpy.validation.transient_variable_coefficient import (
+              spectral_laplace_concentration_from_inlet as validation_laplace,
+          )
+
+          DEGREES = (24, 26, 28)
+          DPS = 40
+
+          def consensus(laplace_fn, t):
+              vals = [
+                  dehoog_inverse_laplace(
+                      laplace_fn, t, degree=d, working_dps=DPS
+                  )
+                  for d in DEGREES
+              ]
+              return float(np.median(np.asarray(vals, dtype=np.float64))), vals
+
+          def rel(got, ref):
+              return abs(got-ref)/max(abs(ref), 1e-14)
+
+          checks = {}
+          metrics = {}
+          t0 = time.perf_counter()
+
+          # QA044-02 smooth exponential
+          c = exponential_case()
+          pts = (0.02, 0.1, 1.0, 5.0, 20.0)
+          vals = [consensus(c.laplace, t)[0] for t in pts]
+          abs_err = [abs(v-c.exact(t)) for v, t in zip(vals, pts)]
+          checks["qa044_02_exponential"] = max(abs_err) < 2e-9
+          metrics["qa044_02_max_abs_error"] = max(abs_err)
+
+          # QA044-03 delayed step
+          c = delayed_step_case(2.0)
+          pre = [abs(consensus(c.laplace, t)[0]) for t in (0.5,1.0,1.8)]
+          post = [rel(consensus(c.laplace, t)[0], 1.0) for t in (2.4,3.0,8.0)]
+          checks["qa044_03_delayed_step"] = max(pre) < 2e-9 and max(post) < 2e-7
+          metrics["qa044_03_max_pre_abs"] = max(pre)
+          metrics["qa044_03_max_post_rel"] = max(post)
+
+          # QA044-04 delayed exponential
+          c = delayed_exponential_case()
+          pre = [abs(consensus(c.laplace, t)[0]) for t in (0.5,1.0,1.4)]
+          post = [rel(consensus(c.laplace, t)[0], c.exact(t)) for t in (1.8,2.5,5.0,12.0)]
+          checks["qa044_04_delayed_exponential"] = max(pre) < 2e-8 and max(post) < 3e-6
+          metrics["qa044_04_max_pre_abs"] = max(pre)
+          metrics["qa044_04_max_post_rel"] = max(post)
+
+          # QA044-05 damped sine
+          c = damped_sine_case()
+          pts = (0.2,0.7,1.4,3.0,6.0)
+          err = max(abs(consensus(c.laplace,t)[0]-c.exact(t)) for t in pts)
+          checks["qa044_05_damped_sine"] = err < 2e-7
+          metrics["qa044_05_max_abs_error"] = err
+
+          # QA044-06 damped cosine
+          c = damped_cosine_case()
+          pts = (0.15,0.6,1.1,2.5,5.0)
+          err = max(abs(consensus(c.laplace,t)[0]-c.exact(t)) for t in pts)
+          checks["qa044_06_damped_cosine"] = err < 3e-7
+          metrics["qa044_06_max_abs_error"] = err
+
+          # QA044-07 diffusion branch point
+          c = diffusion_erfc_case()
+          pts = (0.1,0.3,1.0,4.0,15.0)
+          err = max(rel(consensus(c.laplace,t)[0], c.exact(t)) for t in pts)
+          checks["qa044_07_diffusion_erfc"] = err < 3e-7
+          metrics["qa044_07_max_rel_error"] = err
+
+          # QA043 exact variable-coefficient causal benchmark.
+          c, system, y0 = _exact_spectral()
+          x = 4.0
+          z = 3.0
+
+          def exact_spectral_laplace(s):
+              return spectral_laplace_concentration_from_inlet(
+                  system, y0, x, z, s
+              )
+
+          pre_vals = [abs(consensus(exact_spectral_laplace,t)[0]) for t in (1.0,1.5,1.9)]
+          checks["qa043_prefront_causality"] = max(pre_vals) < 2e-8
+          metrics["qa043_max_prefront_abs"] = max(pre_vals)
+
+          times = (2.1,2.2,2.3,2.75,3.0,5.0)
+          errors = []
+          for t in times:
+              got, _ = consensus(exact_spectral_laplace, t)
+              ref = float(c.exact_concentration(x,[z],t)[0])
+              errors.append(abs(got-ref)/ref)
+
+          qa043_checks = {
+              "e_t2_1_lt_2e-4": errors[0] < 2e-4,
+              "e_t2_2_lt_1e-5": errors[1] < 1e-5,
+              "e_t2_3_lt_1e-6": errors[2] < 1e-6,
+              "max_far_lt_1e-8": max(errors[3:]) < 1e-8,
+              "near_front_monotone": errors[2] < errors[1] < errors[0],
+          }
+          checks["qa043_postfront_envelope"] = all(qa043_checks.values())
+          metrics["qa043_errors"] = errors
+          metrics["qa043_checks"] = qa043_checks
+
+          # QA044-09 variable operator across multiple distances.
+          c = ExactTransientVariableDiffusivityCase()
+          system = assemble_settling_legendre_system(
+              h=c.h, n_modes=34, wind=c.wind, diffusivity=c.diffusivity,
+              source_height=5.0, emission_rate=1.0,
+              settling_velocity_m_s=c.settling_velocity_m_s,
+              boundary=LinearRobinBoundaryCondition(
+                  c.boundary_sink_velocity_m_s, 0.0, "F5I causal"
+              ),
+              n_quad=220, z_lower=c.z_lower,
+          )
+          y0 = project_profile_to_legendre(
+              c.inlet_profile, h=c.h, n_modes=system.n_modes,
+              z_lower=c.z_lower, n_quad=512,
+          )
+          pre_multi = []
+          post_multi = []
+          for x in (1.0,4.0,8.0):
+              tau = c.arrival_time_s(x)
+              z = 3.0
+              f = lambda s, x=x, z=z: validation_laplace(system,y0,x,z,s)
+              pre_multi.append(abs(consensus(f,0.75*tau)[0]))
+              t = tau + max(0.75,0.25*tau)
+              got, _ = consensus(f,t)
+              ref = float(c.exact_concentration(x,[z],t)[0])
+              post_multi.append(rel(got,ref))
+          checks["qa044_09_variable_operator"] = max(pre_multi) < 2e-8 and max(post_multi) < 3e-6
+          metrics["qa044_09_max_pre_abs"] = max(pre_multi)
+          metrics["qa044_09_max_post_rel"] = max(post_multi)
+
+          # QA043-09 full variable-coefficient long-time steady recovery.
+          c, _, _, system, y0 = _full_variable_spectral()
+          zvals = np.array([15.0,25.0,40.0,55.0,70.0,85.0,105.0])
+          got = []
+          for zz in zvals:
+              f = lambda s, zz=float(zz): validation_laplace(
+                  system,y0,100.0,zz,s
+              )
+              got.append(consensus(f,80.0)[0])
+          got = np.asarray(got, dtype=np.float64)
+          ref = spectral_solution_from_initial_coefficients(
+              system,y0,100.0,zvals
+          )
+          long_rel_l2 = float(np.linalg.norm(got-ref)/np.linalg.norm(ref))
+          checks["qa043_09_long_time_steady"] = long_rel_l2 < 1e-7
+          metrics["qa043_09_rel_l2"] = long_rel_l2
+
+          elapsed = time.perf_counter() - t0
+          all_pass = all(checks.values())
+
+          payload = {
+              "schema": "gilttpy.step-f5i.degree-median-multiregime.v1",
+              "candidate": {
+                  "aggregation": "median",
+                  "degrees": list(DEGREES),
+                  "working_dps": DPS,
+                  "target_free": True,
+              },
+              "platform": platform.platform(),
+              "machine": platform.machine(),
+              "python": platform.python_version(),
+              "versions": {
+                  "numpy": np.__version__,
+                  "scipy": scipy.__version__,
+                  "mpmath": mpmath.__version__,
+                  "threadpoolctl": threadpoolctl.__version__,
+              },
+              "threadpools": threadpoolctl.threadpool_info(),
+              "checks": checks,
+              "metrics": metrics,
+              "all_checks_pass": all_pass,
+              "wall_seconds": elapsed,
+          }
+
+          safe_os = platform.system().lower()
+          safe_py = f"{sys.version_info.major}{sys.version_info.minor}"
+          Path(f"step_f5i_{safe_os}_py{safe_py}.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          print(json.dumps({
+              "platform": payload["platform"],
+              "python": payload["python"],
+              "all_checks_pass": all_pass,
+              "wall_seconds": elapsed,
+              "checks": checks,
+          }, indent=2, sort_keys=True))
+
+          if not all_pass:
+              raise SystemExit("degree-median candidate failed one or more preregistered QA043/QA044 regime checks")
+          PY
+
+      - name: Upload STEP F5I evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step-f5i-${{ matrix.os }}-py${{ matrix.python }}
+          path: step_f5i_*.json
+          if-no-files-found: error
