@@ -1,0 +1,407 @@
+name: qa043-expm-matvec-causal-isolation
+
+on:
+  push:
+    branches:
+      - step-f5f1-expm-matvec-isolation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolate:
+    name: expm vs matvec / Ubuntu 24.04 / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.14"]
+    runs-on: ubuntu-24.04
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Build and install branch wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build pytest threadpoolctl
+          python -m build --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import sys
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install",
+              "--force-reinstall", str(wheels[0]),
+          ])
+          PY
+
+      - name: Write causal-isolation scripts
+        shell: bash
+        run: |
+          cat > step_f5f1_prepare.py <<'PY'
+          import json
+          import os
+          import platform
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("02_TESTS").resolve()))
+
+          import mpmath as mp
+          import numpy as np
+          import threadpoolctl
+          from scipy.linalg import solve
+
+          from test_qa043_transient_variable_coefficient_benchmark import _exact_spectral
+          from gilttpy.basis.shifted_legendre import values as legendre_values
+
+          info = threadpoolctl.threadpool_info()
+          archs = sorted({
+              str(x.get("architecture", ""))
+              for x in info if x.get("internal_api") == "openblas"
+          })
+          if not archs or not all(a.lower() == "haswell" for a in archs):
+              raise SystemExit(f"prepare requires Haswell; observed {archs}")
+
+          c, system, y0 = _exact_spectral()
+          x = 4.0
+          z = 3.0
+          t = 5.0
+          phi = legendre_values(
+              np.asarray([z]),
+              h=system.h,
+              n_modes=system.n_modes,
+              z_lower=system.z_lower,
+          )[0].astype(np.float64)
+          ref = float(c.exact_concentration(x, [z], t)[0])
+
+          for degree in (26, 28):
+              s_values = []
+              generators = []
+
+              def callback(p):
+                  s = complex(p)
+                  matrix = (
+                      system.operator.astype(np.complex128)
+                      + s*np.eye(system.n_modes, dtype=np.complex128)
+                  )
+                  generator = -solve(
+                      system.M.astype(np.complex128),
+                      matrix,
+                      assume_a="gen",
+                      check_finite=True,
+                  )
+                  s_values.append(s)
+                  generators.append(generator)
+                  exact = complex(
+                      c.exact_laplace_concentration(x, [z], s)[0]
+                  )
+                  return mp.mpc(exact.real, exact.imag)
+
+              with mp.workdps(40):
+                  mp.invertlaplace(
+                      callback, mp.mpf(t),
+                      method="dehoog", degree=degree,
+                  )
+
+              np.savez(
+                  f"step_f5f1_base_degree{degree}.npz",
+                  s=np.asarray(s_values, dtype=np.complex128),
+                  generator=np.asarray(generators, dtype=np.complex128),
+                  y0=np.asarray(y0, dtype=np.float64),
+                  phi=np.asarray(phi, dtype=np.float64),
+                  reference=np.asarray([ref], dtype=np.float64),
+              )
+
+          Path("step_f5f1_prepare.json").write_text(
+              json.dumps({
+                  "schema": "gilttpy.step-f5f1.prepare.v1",
+                  "python": platform.python_version(),
+                  "requested_coretype": os.environ.get("OPENBLAS_CORETYPE"),
+                  "observed_openblas_architectures": archs,
+                  "reference_t5": ref,
+              }, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          cat > step_f5f1_expm.py <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          import numpy as np
+          import threadpoolctl
+          from scipy.linalg import expm
+
+          if len(sys.argv) != 2:
+              raise SystemExit("usage: step_f5f1_expm.py <haswell|sandybridge>")
+          label = sys.argv[1]
+          expected = {
+              "haswell": "Haswell",
+              "sandybridge": "Sandybridge",
+          }[label]
+          info = threadpoolctl.threadpool_info()
+          archs = sorted({
+              str(x.get("architecture", ""))
+              for x in info if x.get("internal_api") == "openblas"
+          })
+          if not archs or not all(a.lower() == expected.lower() for a in archs):
+              raise SystemExit(f"requested {expected}; observed {archs}")
+
+          for degree in (26, 28):
+              d = np.load(f"step_f5f1_base_degree{degree}.npz")
+              generator = d["generator"]
+              exponentials = np.asarray(
+                  [expm(g*4.0) for g in generator],
+                  dtype=np.complex128,
+              )
+              np.savez(
+                  f"step_f5f1_expm_{label}_degree{degree}.npz",
+                  exponential=exponentials,
+              )
+
+          Path(f"step_f5f1_expm_{label}.json").write_text(
+              json.dumps({
+                  "schema": "gilttpy.step-f5f1.expm.v1",
+                  "label": label,
+                  "requested_coretype": os.environ.get("OPENBLAS_CORETYPE"),
+                  "observed_openblas_architectures": archs,
+              }, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          cat > step_f5f1_matvec.py <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          import numpy as np
+          import threadpoolctl
+
+          if len(sys.argv) != 3:
+              raise SystemExit(
+                  "usage: step_f5f1_matvec.py <haswell|sandybridge> <source_expm>"
+              )
+          label = sys.argv[1]
+          source = sys.argv[2]
+          expected = {
+              "haswell": "Haswell",
+              "sandybridge": "Sandybridge",
+          }[label]
+          if source not in {"haswell", "sandybridge"}:
+              raise SystemExit("source_expm must be haswell or sandybridge")
+
+          info = threadpoolctl.threadpool_info()
+          archs = sorted({
+              str(x.get("architecture", ""))
+              for x in info if x.get("internal_api") == "openblas"
+          })
+          if not archs or not all(a.lower() == expected.lower() for a in archs):
+              raise SystemExit(f"requested {expected}; observed {archs}")
+
+          for degree in (26, 28):
+              base = np.load(f"step_f5f1_base_degree{degree}.npz")
+              ex = np.load(
+                  f"step_f5f1_expm_{source}_degree{degree}.npz"
+              )["exponential"]
+              s = base["s"]
+              y0 = base["y0"].astype(np.complex128)
+              phi = base["phi"]
+
+              coeff = []
+              concentration = []
+              for sj, ej in zip(s, ex):
+                  cj = ej @ (y0/sj)
+                  qj = complex(phi @ cj)
+                  coeff.append(cj)
+                  concentration.append(qj)
+
+              np.savez(
+                  f"step_f5f1_matvec_{label}_from_{source}_degree{degree}.npz",
+                  coefficients=np.asarray(coeff, dtype=np.complex128),
+                  concentration=np.asarray(concentration, dtype=np.complex128),
+              )
+
+          Path(f"step_f5f1_matvec_{label}_from_{source}.json").write_text(
+              json.dumps({
+                  "schema": "gilttpy.step-f5f1.matvec.v1",
+                  "label": label,
+                  "source_expm": source,
+                  "requested_coretype": os.environ.get("OPENBLAS_CORETYPE"),
+                  "observed_openblas_architectures": archs,
+              }, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          cat > step_f5f1_compare.py <<'PY'
+          import json
+          import platform
+          import sys
+          from pathlib import Path
+
+          import mpmath as mp
+          import numpy as np
+
+          def invert_samples(values, degree):
+              values = list(np.asarray(values, dtype=np.complex128))
+              i = 0
+              def callback(_p):
+                  nonlocal i
+                  v = values[i]
+                  i += 1
+                  return mp.mpc(float(v.real), float(v.imag))
+              with mp.workdps(40):
+                  result = mp.invertlaplace(
+                      callback, mp.mpf(5.0),
+                      method="dehoog", degree=degree,
+                  )
+              if i != len(values):
+                  raise RuntimeError(
+                      f"degree {degree}: used {i} of {len(values)} samples"
+                  )
+              return float(mp.re(result))
+
+          def arrdiff(a, b):
+              a = np.asarray(a)
+              b = np.asarray(b)
+              d = np.abs(a-b)
+              return {
+                  "byte_identical":
+                      bool(a.tobytes(order="C") == b.tobytes(order="C")),
+                  "max_abs_difference":
+                      float(np.max(d)) if d.size else 0.0,
+                  "l2_difference":
+                      float(np.linalg.norm((a-b).ravel())),
+              }
+
+          payload = {
+              "schema": "gilttpy.step-f5f1.expm-vs-matvec-comparison.v1",
+              "python": platform.python_version(),
+              "degrees": {},
+          }
+
+          for degree in (26, 28):
+              base = np.load(f"step_f5f1_base_degree{degree}.npz")
+              ref = float(base["reference"][0])
+              eh = np.load(
+                  f"step_f5f1_expm_haswell_degree{degree}.npz"
+              )["exponential"]
+              es = np.load(
+                  f"step_f5f1_expm_sandybridge_degree{degree}.npz"
+              )["exponential"]
+
+              combos = {}
+              for matvec in ("haswell", "sandybridge"):
+                  for source in ("haswell", "sandybridge"):
+                      arr = np.load(
+                          f"step_f5f1_matvec_{matvec}_from_{source}_degree{degree}.npz"
+                      )
+                      v = invert_samples(arr["concentration"], degree)
+                      combos[f"expm_{source}__matvec_{matvec}"] = {
+                          "inverse_value": v,
+                          "relative_error": float(abs(v-ref)/ref),
+                          "passes_1e-8": bool(abs(v-ref)/ref < 1e-8),
+                      }
+
+              A = combos["expm_haswell__matvec_haswell"]["inverse_value"]
+              B = combos["expm_haswell__matvec_sandybridge"]["inverse_value"]
+              C = combos["expm_sandybridge__matvec_haswell"]["inverse_value"]
+              D = combos["expm_sandybridge__matvec_sandybridge"]["inverse_value"]
+
+              payload["degrees"][str(degree)] = {
+                  "reference": ref,
+                  "exponential_matrix_difference": arrdiff(eh, es),
+                  "combinations": combos,
+                  "causal_deltas": {
+                      "matvec_effect_given_haswell_expm": float(B-A),
+                      "matvec_effect_given_sandybridge_expm": float(D-C),
+                      "expm_effect_given_haswell_matvec": float(C-A),
+                      "expm_effect_given_sandybridge_matvec": float(D-B),
+                      "total_haswell_to_sandybridge": float(D-A),
+                  },
+              }
+
+          out = Path(
+              f"step_f5f1_comparison_py"
+              f"{sys.version_info.major}{sys.version_info.minor}.json"
+          )
+          out.write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          PY
+
+      - name: Prepare identical generators under Haswell
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Haswell python step_f5f1_prepare.py
+
+      - name: Compute exponentials under Haswell
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Haswell python step_f5f1_expm.py haswell
+
+      - name: Compute exponentials under Sandybridge
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Sandybridge python step_f5f1_expm.py sandybridge
+
+      - name: Haswell matvec using Haswell exponentials
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Haswell \
+          python step_f5f1_matvec.py haswell haswell
+
+      - name: Sandybridge matvec using Haswell exponentials
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Sandybridge \
+          python step_f5f1_matvec.py sandybridge haswell
+
+      - name: Haswell matvec using Sandybridge exponentials
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Haswell \
+          python step_f5f1_matvec.py haswell sandybridge
+
+      - name: Sandybridge matvec using Sandybridge exponentials
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Sandybridge \
+          python step_f5f1_matvec.py sandybridge sandybridge
+
+      - name: Compare causal contributions
+        shell: bash
+        run: |
+          python step_f5f1_compare.py
+
+      - name: Upload STEP F5F1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step-f5f1-ubuntu-py${{ matrix.python }}
+          path: |
+            step_f5f1_*.json
+            step_f5f1_*.npz
+          if-no-files-found: error
