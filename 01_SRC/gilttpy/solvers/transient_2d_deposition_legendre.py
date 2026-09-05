@@ -32,7 +32,10 @@ from gilttpy.solvers.steady_2d_deposition_legendre import (
     assemble_legendre_deposition_system,
 )
 from gilttpy.solvers.transient_2d import fixed_talbot_inverse
-from gilttpy.numerics.inverse_laplace_modern import dehoog_inverse_laplace
+from gilttpy.numerics.inverse_laplace_modern import (
+    dehoog_inverse_laplace,
+    dehoog_consensus_inverse_laplace,
+)
 
 FloatArray = NDArray[np.float64]
 ComplexArray = NDArray[np.complex128]
@@ -141,10 +144,25 @@ class TransientLegendreDepositionSystem:
         return fixed_talbot_inverse(lambda s:self.laplace_concentration(x,z,s),t,mstar=mstar)
 
     def concentration_dehoog(self, x: float, z: float, t: float, *, degree: int=28, working_dps: int=40) -> float:
-        """Modern robust inverse-Laplace path; Fixed Talbot remains a historical comparator."""
+        """Modern single-degree de Hoog path; Fixed Talbot remains a historical comparator."""
         return dehoog_inverse_laplace(
             lambda s:self.laplace_concentration(x,z,s),
             t,degree=degree,working_dps=working_dps,
+        )
+
+    def concentration_dehoog_consensus(
+        self,
+        x: float,
+        z: float,
+        t: float,
+        *,
+        degrees: tuple[int, ...]=(24,26,28),
+        working_dps: int=40,
+    ) -> float:
+        """Portable degree-consensus path for complex128 spectral evaluations."""
+        return dehoog_consensus_inverse_laplace(
+            lambda s:self.laplace_concentration(x,z,s),
+            t,degrees=degrees,working_dps=working_dps,
         )
 
     def lower_boundary_concentration_fixed_talbot(self, x: float, t: float, *, mstar: int=9) -> float:

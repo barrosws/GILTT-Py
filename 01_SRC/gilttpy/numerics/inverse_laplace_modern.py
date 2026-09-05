@@ -65,3 +65,58 @@ def dehoog_inverse_laplace(
     if not math.isfinite(out):
         raise FloatingPointError("nonfinite de Hoog inverse-Laplace result")
     return out
+
+
+def dehoog_consensus_inverse_laplace(
+    laplace_fn: Callable[[complex], complex],
+    t: float,
+    *,
+    degrees: tuple[int, ...] = (24, 26, 28),
+    working_dps: int = 40,
+) -> float:
+    """Target-free degree consensus for complex128 Laplace-model evaluations.
+
+    The same complex128 Laplace model is inverted independently at an odd,
+    strictly increasing set of de Hoog degrees and the median estimate is
+    returned. This does not claim precision beyond complex128. It limits
+    sensitivity to degree-dependent amplification of low-level model-evaluation
+    roundoff observed in the QA043 portability campaign.
+    """
+    raw = tuple(degrees)
+    if len(raw) < 3 or len(raw) % 2 == 0:
+        raise ValueError("degrees must contain an odd number of at least three values")
+
+    parsed: list[int] = []
+    for degree in raw:
+        try:
+            value = int(degree)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("degrees must contain integers") from exc
+        if value != degree:
+            raise ValueError("degrees must contain integers")
+        parsed.append(value)
+
+    degrees = tuple(parsed)
+    if tuple(sorted(degrees)) != degrees or len(set(degrees)) != len(degrees):
+        raise ValueError("degrees must be strictly increasing and unique")
+    if degrees[0] < 8 or degrees[-1] > 30:
+        raise ValueError("consensus degrees must lie in [8,30] for complex128 model evaluations")
+    if int(working_dps) != working_dps or int(working_dps) < 20:
+        raise ValueError("working_dps must be integer >= 20")
+
+    values = np.asarray(
+        [
+            dehoog_inverse_laplace(
+                laplace_fn,
+                t,
+                degree=degree,
+                working_dps=int(working_dps),
+            )
+            for degree in degrees
+        ],
+        dtype=np.float64,
+    )
+    out = float(np.median(values))
+    if not math.isfinite(out):
+        raise FloatingPointError("nonfinite de Hoog consensus inverse-Laplace result")
+    return out

@@ -21,6 +21,7 @@ from gilttpy.validation.transient_variable_coefficient import (
     ExactTransientVariableDiffusivityCase,
     assemble_direct_transient_fem_fv_reference,
     spectral_dehoog_concentration_from_inlet,
+    spectral_dehoog_consensus_concentration_from_inlet,
     spectral_laplace_concentration_from_inlet,
 )
 from gilttpy.validation.variable_coefficient import (
@@ -123,7 +124,7 @@ def test_qa043_03_dehoog_is_causal_before_exact_advective_arrival():
     x=4.0; z=3.0
     assert c.arrival_time_s(x) == pytest.approx(2.0)
     for t in (1.0,1.5,1.9):
-        got=spectral_dehoog_concentration_from_inlet(sys,y0,x,z,t,degree=28,working_dps=40)
+        got=spectral_dehoog_consensus_concentration_from_inlet(sys,y0,x,z,t,degrees=(24,26,28),working_dps=40)
         assert abs(got) < 2e-8
         assert c.exact_concentration(x,[z],t)[0] == 0.0
 
@@ -132,8 +133,12 @@ def test_qa043_04_dehoog_postarrival_error_decays_away_from_discontinuous_front(
     c,sys,y0=_exact_spectral()
     x=4.0; z=3.0
     errors=[]
+    # STEP F5A-F5I established that a single degree=28 inversion is
+    # cross-platform sensitive for this complex128 spectral transform.
+    # Use the preregistered target-free degree median; keep the original
+    # physical benchmark, time points, and numerical tolerances unchanged.
     for t in (2.1,2.2,2.3,2.75,3.0,5.0):
-        got=spectral_dehoog_concentration_from_inlet(sys,y0,x,z,t,degree=28,working_dps=40)
+        got=spectral_dehoog_consensus_concentration_from_inlet(sys,y0,x,z,t,degrees=(24,26,28),working_dps=40)
         ref=float(c.exact_concentration(x,[z],t)[0])
         errors.append(abs(got-ref)/ref)
     # The transform is discontinuous at t=2.0.  The near-front layer is
@@ -171,6 +176,10 @@ def test_qa043_06_modern_settling_solver_exposes_dehoog_and_reaches_steady_refer
     got=transient.concentration_dehoog(3.0,2.0,3.0,degree=26,working_dps=35)
     ref=float(steady.concentration(3.0,np.array([2.0]))[0])
     assert abs(got-ref)/abs(ref) < 2e-8
+    got_consensus=transient.concentration_dehoog_consensus(
+        3.0,2.0,3.0,degrees=(24,26,28),working_dps=40
+    )
+    assert abs(got_consensus-ref)/abs(ref) < 2e-8
 
     # The same modern inversion provider is wired into the QA-037 no-settling
     # typed-boundary transient system, without changing the historical core.
@@ -182,6 +191,10 @@ def test_qa043_06_modern_settling_solver_exposes_dehoog_and_reaches_steady_refer
     got0=transient0.concentration_dehoog(3.0,2.0,3.0,degree=26,working_dps=35)
     ref0=float(steady0.concentration(3.0,np.array([2.0]))[0])
     assert abs(got0-ref0)/abs(ref0) < 2e-8
+    got0_consensus=transient0.concentration_dehoog_consensus(
+        3.0,2.0,3.0,degrees=(24,26,28),working_dps=40
+    )
+    assert abs(got0_consensus-ref0)/abs(ref0) < 2e-8
 
 
 def test_qa043_07_full_variable_coefficients_dehoog_agree_with_direct_time_fem_fv():
@@ -204,7 +217,9 @@ def test_qa043_09_dehoog_long_time_recovers_full_variable_steady_state():
     c,_,_,sys,y0=_full_variable_spectral()
     z=np.array([15.0,25.0,40.0,55.0,70.0,85.0,105.0])
     got=np.array([
-        spectral_dehoog_concentration_from_inlet(sys,y0,100.0,float(zz),80.0,degree=28,working_dps=40)
+        spectral_dehoog_consensus_concentration_from_inlet(
+            sys,y0,100.0,float(zz),80.0,degrees=(24,26,28),working_dps=40
+        )
         for zz in z
     ])
     ref=spectral_solution_from_initial_coefficients(sys,y0,100.0,z)
@@ -222,3 +237,6 @@ def test_qa043_10_scope_and_provenance_guards_preserve_historical_fixed_talbot()
         dehoog_inverse_laplace(lambda s:1.0/s,0.0)
     with pytest.raises(ValueError):
         dehoog_inverse_laplace(lambda s:1.0/s,1.0,degree=4)
+    from gilttpy.numerics.inverse_laplace_modern import dehoog_consensus_inverse_laplace
+    with pytest.raises(ValueError):
+        dehoog_consensus_inverse_laplace(lambda s:1.0/s,1.0,degrees=(24,28))

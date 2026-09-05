@@ -28,7 +28,10 @@ from scipy.sparse import bmat, csr_matrix, hstack, vstack
 from scipy.sparse.linalg import expm_multiply
 
 from gilttpy.basis.shifted_legendre import values as legendre_values
-from gilttpy.numerics.inverse_laplace_modern import dehoog_inverse_laplace
+from gilttpy.numerics.inverse_laplace_modern import (
+    dehoog_inverse_laplace,
+    dehoog_consensus_inverse_laplace,
+)
 
 FloatArray = NDArray[np.float64]
 Profile = Callable[[FloatArray], ArrayLike]
@@ -209,6 +212,25 @@ def spectral_dehoog_concentration_from_inlet(
         lambda s: spectral_laplace_concentration_from_inlet(system, inlet_coefficients, x, z, s),
         t,
         degree=degree,
+        working_dps=working_dps,
+    )
+
+
+def spectral_dehoog_consensus_concentration_from_inlet(
+    system,
+    inlet_coefficients: ArrayLike,
+    x: float,
+    z: float,
+    t: float,
+    *,
+    degrees: tuple[int, ...] = (24, 26, 28),
+    working_dps: int = 40,
+) -> float:
+    """Portable target-free de Hoog consensus for spectral complex128 values."""
+    return dehoog_consensus_inverse_laplace(
+        lambda s: spectral_laplace_concentration_from_inlet(system, inlet_coefficients, x, z, s),
+        t,
+        degrees=degrees,
         working_dps=working_dps,
     )
 
