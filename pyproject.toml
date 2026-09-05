@@ -9,6 +9,14 @@ description = "Verified spectral-Laplace framework for atmospheric advection-dif
 readme = "README.md"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
+authors = [
+  {name = "Jorge Luís Braga Ribes"},
+  {name = "Maicon Nardino"},
+  {name = "Régis Sperotto de Quadros"},
+  {name = "Daniela Buske"},
+  {name = "Luís Carlos Timm"},
+  {name = "Willian Silva Barros"},
+]
 requires-python = ">=3.11,<3.15"
 dependencies = [
   "numpy>=1.26",

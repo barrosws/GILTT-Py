@@ -105,6 +105,9 @@ def audit_archival_readiness(project_root: str | Path) -> tuple[ArchivalEvidence
     license_file=has("LICENSE")
     version=_project_version(root)
     coverage=has("coverage/qa057_coverage.json")
+    f6_state_path=root/"metadata/step_f6_public_metadata_state.json"
+    f6_state=json.loads(f6_state_path.read_text()) if f6_state_path.exists() else {}
+    version_doi=f6_state.get("zenodo_version_doi")
     return (
         ArchivalEvidence("distribution_reproducibility", ReadinessStatus.READY if qa057_build else ReadinessStatus.HOLD, ("QA057_BUILD_REPRODUCIBILITY.json",) if qa057_build else (), "QA057 deterministic distribution evidence is frozen locally."),
         ArchivalEvidence("operational_qa_replay", ReadinessStatus.READY if qa057_source and plan else ReadinessStatus.HOLD, tuple(x for x in ("QA057_SOURCE_ONE_COMMAND_REPLAY.json","reproduction/qa057_qa_replay.toml") if has(x)), "QA057 one-command QA replay is frozen; this is not manuscript-output reproduction."),
@@ -115,7 +118,24 @@ def audit_archival_readiness(project_root: str | Path) -> tuple[ArchivalEvidence
         ArchivalEvidence("public_software_version", ReadinessStatus.HOLD, ("pyproject.toml",), f"Current version is {version}; public release version remains an explicit decision."),
         ArchivalEvidence("software_authorship_orcids", ReadinessStatus.HOLD, ("metadata/qa054_release_metadata_state.json",) if has("metadata/qa054_release_metadata_state.json") else (), "Software authorship and ORCIDs remain under explicit review and may not be inferred."),
         ArchivalEvidence("software_license", ReadinessStatus.READY if license_file else ReadinessStatus.HOLD, ("LICENSE",) if license_file else (("LICENSE_POLICY.md",) if has("LICENSE_POLICY.md") else ()), "License policy exists; no software license has been selected."),
-        ArchivalEvidence("citation_doi_metadata", ReadinessStatus.READY if final_cff else ReadinessStatus.HOLD, ("CITATION.cff",) if final_cff else (("CITATION.cff.template",) if has("CITATION.cff.template") else ()), "Only a template exists; DOI and final citation metadata remain HOLD."),
+        ArchivalEvidence(
+            "citation_doi_metadata",
+            ReadinessStatus.READY if final_cff and version_doi else ReadinessStatus.HOLD,
+            tuple(
+                x for x in (
+                    "CITATION.cff" if final_cff else "CITATION.cff.template",
+                    "metadata/step_f6_public_metadata_state.json" if f6_state_path.exists() else None,
+                )
+                if x is not None and has(x)
+            ),
+            (
+                "Active CFF and version DOI are present."
+                if final_cff and version_doi
+                else "Active CFF is present but DOI remains unresolved; citation/DOI role stays HOLD."
+                if final_cff
+                else "Only a template exists; DOI and final citation metadata remain HOLD."
+            ),
+        ),
         ArchivalEvidence("canonical_data_release", ReadinessStatus.HOLD, (), "No canonical public data release is frozen by QA058."),
         ArchivalEvidence("data_rights_provenance", ReadinessStatus.HOLD, ("LICENSE_POLICY.md",) if has("LICENSE_POLICY.md") else (), "Complete data/source provenance and redistribution-rights adjudication remains HOLD."),
         ArchivalEvidence("scientific_config_coverage", ReadinessStatus.HOLD, ("reproduction/qa057_qa_replay.toml",) if plan else (), "QA replay config exists; complete configs for manuscript-associated scientific runs remain HOLD."),

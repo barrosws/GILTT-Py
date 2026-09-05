@@ -1,0 +1,34 @@
+{
+  "author_orcids": null,
+  "citation_cff_active": true,
+  "citation_cff_schema_version": "1.2.0",
+  "external_ci_canonical_main_run_id": 33968524183,
+  "external_ci_canonical_main_sha": "6fe5b361c92d3634364f825014430ed3300ea7d4",
+  "external_ci_complete": true,
+  "gate": "STEP_F6_PUBLIC_METADATA_AUTHORSHIP_ACTIVATED",
+  "orcid_policy": "OMITTED_UNTIL_EXPLICITLY_SUPPLIED_OR_VERIFIED",
+  "prohibitions": [
+    "NO_GUESSED_ORCID",
+    "NO_FABRICATED_DOI",
+    "NO_UNVERIFIED_DATA_REDISTRIBUTION",
+    "NO_TARGET_TUNING"
+  ],
+  "raw_copenhagen_hanford_redistributed": false,
+  "release_date": null,
+  "release_version": "2.0.0",
+  "repository_created": true,
+  "repository_url": "https://github.com/barrosws/GILTT-Py",
+  "software_authorship": [
+    "Jorge Luís Braga Ribes",
+    "Maicon Nardino",
+    "Régis Sperotto de Quadros",
+    "Daniela Buske",
+    "Luís Carlos Timm",
+    "Willian Silva Barros"
+  ],
+  "software_authorship_reviewed": true,
+  "software_license_spdx": "BSD-3-Clause",
+  "status": "PUBLIC_METADATA_ACTIVE_DOI_AND_RELEASE_DATE_PENDING",
+  "zenodo_concept_doi": null,
+  "zenodo_version_doi": null
+}
