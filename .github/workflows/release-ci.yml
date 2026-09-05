@@ -41,6 +41,8 @@ jobs:
           if len(wheels) != 1:
               raise SystemExit(f'expected exactly one wheel, found {len(wheels)}')
           subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--force-reinstall', str(wheels[0])])
+          subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--force-reinstall', 'mpmath==1.3.0'])
+          subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--force-reinstall', 'mpmath==1.3.0'])
           PY
       - name: Run 396-test release-transition suite
         shell: bash
