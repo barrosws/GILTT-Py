@@ -1,0 +1,223 @@
+name: qa043-expm-multiply-12-cell-portability
+
+on:
+  push:
+    branches:
+      - step-f5g1-expm-multiply-12-cell
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    name: expm_multiply QA043 / ${{ matrix.os }} / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ${{ matrix.os }}
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Build and install branch wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build pytest threadpoolctl
+          python -m build --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install",
+              "--force-reinstall", str(wheels[0]),
+          ])
+          PY
+
+      - name: Compare current full expm with expm_multiply at frozen degree 28
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import platform
+          import sys
+          import time
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("02_TESTS").resolve()))
+
+          import mpmath
+          import numpy as np
+          import scipy
+          import threadpoolctl
+          from scipy.linalg import solve
+          from scipy.sparse.linalg import expm_multiply
+
+          from test_qa043_transient_variable_coefficient_benchmark import _exact_spectral
+          from gilttpy.basis.shifted_legendre import values as legendre_values
+          from gilttpy.numerics.inverse_laplace_modern import dehoog_inverse_laplace
+          from gilttpy.validation.transient_variable_coefficient import (
+              spectral_dehoog_concentration_from_inlet,
+          )
+
+          c, system, y0 = _exact_spectral()
+          x = 4.0
+          z = 3.0
+          times = (2.1, 2.2, 2.3, 2.75, 3.0, 5.0)
+          degree = 28
+          working_dps = 40
+
+          phi = legendre_values(
+              np.asarray([z]),
+              h=system.h,
+              n_modes=system.n_modes,
+              z_lower=system.z_lower,
+          )[0].astype(np.float64)
+
+          M = system.M.astype(np.complex128)
+          operator = system.operator.astype(np.complex128)
+          y0c = np.asarray(y0, dtype=np.complex128)
+          I = np.eye(system.n_modes, dtype=np.complex128)
+
+          def action_transform(s):
+              s = complex(s)
+              generator = -solve(
+                  M,
+                  operator + s*I,
+                  assume_a="gen",
+                  check_finite=True,
+              )
+              coeff = expm_multiply(generator*x, y0c/s)
+              return complex(phi @ coeff)
+
+          def envelope(errors):
+              return {
+                  "e_t2_1_lt_2e-4": errors[0] < 2e-4,
+                  "e_t2_2_lt_1e-5": errors[1] < 1e-5,
+                  "e_t2_3_lt_1e-6": errors[2] < 1e-6,
+                  "max_far_lt_1e-8": max(errors[3:]) < 1e-8,
+                  "near_front_monotone": errors[2] < errors[1] < errors[0],
+              }
+
+          def evaluate(method):
+              start = time.perf_counter()
+              rows = []
+              for t in times:
+                  ref = float(c.exact_concentration(x, [z], t)[0])
+                  if method == "current_full_expm":
+                      got = spectral_dehoog_concentration_from_inlet(
+                          system, y0, x, z, t,
+                          degree=degree,
+                          working_dps=working_dps,
+                      )
+                  elif method == "expm_multiply":
+                      got = dehoog_inverse_laplace(
+                          action_transform,
+                          t,
+                          degree=degree,
+                          working_dps=working_dps,
+                      )
+                  else:
+                      raise RuntimeError(method)
+                  rows.append({
+                      "t": t,
+                      "got": float(got),
+                      "reference": ref,
+                      "relative_error": float(abs(got-ref)/ref),
+                  })
+              elapsed = time.perf_counter() - start
+              errors = [r["relative_error"] for r in rows]
+              checks = envelope(errors)
+              return {
+                  "degree": degree,
+                  "working_dps": working_dps,
+                  "rows": rows,
+                  "checks": checks,
+                  "all_checks_pass": all(checks.values()),
+                  "max_far_error": max(errors[3:]),
+                  "wall_seconds": elapsed,
+              }
+
+          current = evaluate("current_full_expm")
+          candidate = evaluate("expm_multiply")
+
+          payload = {
+              "schema": "gilttpy.step-f5g1.expm-multiply-12-cell-portability.v1",
+              "platform": platform.platform(),
+              "machine": platform.machine(),
+              "python": platform.python_version(),
+              "versions": {
+                  "numpy": np.__version__,
+                  "scipy": scipy.__version__,
+                  "mpmath": mpmath.__version__,
+                  "threadpoolctl": threadpoolctl.__version__,
+              },
+              "threadpools": threadpoolctl.threadpool_info(),
+              "current_full_expm": current,
+              "candidate_expm_multiply": candidate,
+              "candidate_to_current_wall_time_ratio":
+                  candidate["wall_seconds"]/current["wall_seconds"]
+                  if current["wall_seconds"] > 0 else None,
+          }
+
+          safe_os = platform.system().lower()
+          safe_py = f"{sys.version_info.major}{sys.version_info.minor}"
+          out = Path(f"step_f5g1_{safe_os}_py{safe_py}.json")
+          out.write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          print(json.dumps({
+              "platform": payload["platform"],
+              "python": payload["python"],
+              "versions": payload["versions"],
+              "current_full_expm": {
+                  "all_checks_pass": current["all_checks_pass"],
+                  "max_far_error": current["max_far_error"],
+                  "wall_seconds": current["wall_seconds"],
+                  "failed_checks": [
+                      k for k,v in current["checks"].items() if not v
+                  ],
+              },
+              "candidate_expm_multiply": {
+                  "all_checks_pass": candidate["all_checks_pass"],
+                  "max_far_error": candidate["max_far_error"],
+                  "wall_seconds": candidate["wall_seconds"],
+                  "failed_checks": [
+                      k for k,v in candidate["checks"].items() if not v
+                  ],
+              },
+              "candidate_to_current_wall_time_ratio":
+                  payload["candidate_to_current_wall_time_ratio"],
+          }, indent=2, sort_keys=True))
+
+          if not candidate["all_checks_pass"]:
+              raise SystemExit(
+                  "expm_multiply degree=28 failed the frozen QA043 envelope"
+              )
+          PY
+
+      - name: Upload STEP F5G1 cell evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step-f5g1-${{ matrix.os }}-py${{ matrix.python }}
+          path: step_f5g1_*.json
+          if-no-files-found: error
