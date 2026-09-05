@@ -1,0 +1,433 @@
+name: qa043-blas-stage-localization
+
+on:
+  push:
+    branches:
+      - step-f5f-blas-stage-localization
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage-localization:
+    name: BLAS stage localization / Ubuntu 24.04 / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.14"]
+    runs-on: ubuntu-24.04
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Build and install branch wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip build pytest threadpoolctl
+          python -m build --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          wheels = sorted(Path("dist").glob("*.whl"))
+          if len(wheels) != 1:
+              raise SystemExit(f"expected exactly one wheel, found {len(wheels)}")
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install",
+              "--force-reinstall", str(wheels[0]),
+          ])
+          PY
+
+      - name: Write stage-localization probe
+        shell: bash
+        run: |
+          cat > step_f5f_trace.py <<'PY'
+          import hashlib
+          import json
+          import math
+          import os
+          import platform
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("02_TESTS").resolve()))
+
+          import mpmath as mp
+          import numpy as np
+          import scipy
+          import threadpoolctl
+          from scipy.linalg import expm, solve
+
+          from test_qa043_transient_variable_coefficient_benchmark import _exact_spectral
+          from gilttpy.basis.shifted_legendre import values as legendre_values
+          from gilttpy.validation.transient_variable_coefficient import (
+              spectral_dehoog_concentration_from_inlet,
+          )
+
+          if len(sys.argv) != 2:
+              raise SystemExit("usage: step_f5f_trace.py <haswell|sandybridge>")
+          label = sys.argv[1]
+          expected_arch = {
+              "haswell": "Haswell",
+              "sandybridge": "Sandybridge",
+          }[label]
+
+          c, system, y0 = _exact_spectral()
+          x = 4.0
+          z = 3.0
+          t = 5.0
+          degrees = (26, 28)
+          phi = legendre_values(
+              np.asarray([z]),
+              h=system.h,
+              n_modes=system.n_modes,
+              z_lower=system.z_lower,
+          )[0].astype(np.float64)
+
+          info = threadpoolctl.threadpool_info()
+          archs = sorted({
+              str(item.get("architecture", ""))
+              for item in info
+              if item.get("internal_api") == "openblas"
+          })
+          if not archs:
+              raise SystemExit("no OpenBLAS runtime exposed by threadpoolctl")
+          if not all(a.lower() == expected_arch.lower() for a in archs):
+              raise SystemExit(
+                  f"requested {expected_arch}, observed OpenBLAS architectures={archs}"
+              )
+
+          def sha_array(a):
+              return hashlib.sha256(
+                  np.asarray(a).tobytes(order="C")
+              ).hexdigest()
+
+          assembly = {
+              "M": np.asarray(system.M, dtype=np.float64),
+              "operator": np.asarray(system.operator, dtype=np.float64),
+              "y0": np.asarray(y0, dtype=np.float64),
+              "phi": np.asarray(phi, dtype=np.float64),
+          }
+
+          traces = {}
+          degree_summary = []
+
+          for degree in degrees:
+              s_values = []
+              generators = []
+              exponentials = []
+              coefficients = []
+              concentrations = []
+
+              def wrapped(p):
+                  s = complex(p)
+                  matrix = (
+                      assembly["operator"].astype(np.complex128)
+                      + s*np.eye(system.n_modes, dtype=np.complex128)
+                  )
+                  generator = -solve(
+                      assembly["M"].astype(np.complex128),
+                      matrix,
+                      assume_a="gen",
+                      check_finite=True,
+                  )
+                  exponential = expm(generator*x)
+                  coeff = exponential @ (
+                      assembly["y0"].astype(np.complex128)/s
+                  )
+                  concentration = complex(assembly["phi"] @ coeff)
+
+                  s_values.append(s)
+                  generators.append(np.asarray(generator, dtype=np.complex128))
+                  exponentials.append(np.asarray(exponential, dtype=np.complex128))
+                  coefficients.append(np.asarray(coeff, dtype=np.complex128))
+                  concentrations.append(concentration)
+                  return mp.mpc(concentration.real, concentration.imag)
+
+              with mp.workdps(40):
+                  traced = float(mp.re(mp.invertlaplace(
+                      wrapped,
+                      mp.mpf(t),
+                      method="dehoog",
+                      degree=degree,
+                  )))
+
+              production = spectral_dehoog_concentration_from_inlet(
+                  system, y0, x, z, t,
+                  degree=degree, working_dps=40,
+              )
+              reference = float(c.exact_concentration(x, [z], t)[0])
+              relative_error = float(abs(traced-reference)/reference)
+
+              s_arr = np.asarray(s_values, dtype=np.complex128)
+              g_arr = np.asarray(generators, dtype=np.complex128)
+              e_arr = np.asarray(exponentials, dtype=np.complex128)
+              c_arr = np.asarray(coefficients, dtype=np.complex128)
+              q_arr = np.asarray(concentrations, dtype=np.complex128)
+
+              np.savez(
+                  f"step_f5f_{label}_degree{degree}.npz",
+                  s=s_arr,
+                  generator=g_arr,
+                  exponential=e_arr,
+                  coefficients=c_arr,
+                  concentration=q_arr,
+                  y0=assembly["y0"],
+                  phi=assembly["phi"],
+              )
+
+              traces[str(degree)] = {
+                  "n_laplace_evaluations": int(s_arr.size),
+                  "s_sha256": sha_array(s_arr),
+                  "generator_sha256": sha_array(g_arr),
+                  "exponential_sha256": sha_array(e_arr),
+                  "coefficients_sha256": sha_array(c_arr),
+                  "concentration_sha256": sha_array(q_arr),
+              }
+              degree_summary.append({
+                  "degree": degree,
+                  "production_value": float(production),
+                  "traced_value": traced,
+                  "trace_minus_production": float(traced-production),
+                  "reference": reference,
+                  "relative_error": relative_error,
+                  "passes_far_threshold": relative_error < 1e-8,
+              })
+
+          payload = {
+              "schema": "gilttpy.step-f5f.blas-stage-localization.trace.v1",
+              "label": label,
+              "requested_coretype": os.environ.get("OPENBLAS_CORETYPE"),
+              "observed_openblas_architectures": archs,
+              "platform": platform.platform(),
+              "machine": platform.machine(),
+              "python": platform.python_version(),
+              "versions": {
+                  "numpy": np.__version__,
+                  "scipy": scipy.__version__,
+                  "mpmath": mp.__version__,
+                  "threadpoolctl": threadpoolctl.__version__,
+              },
+              "threadpools": info,
+              "assembly_sha256": {
+                  name: sha_array(arr) for name, arr in assembly.items()
+              },
+              "x": x,
+              "z": z,
+              "t": t,
+              "working_dps": 40,
+              "degrees": list(degrees),
+              "degree_summary": degree_summary,
+              "traces": traces,
+          }
+          Path(f"step_f5f_{label}.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          PY
+
+          cat > step_f5f_replay.py <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          import numpy as np
+          import threadpoolctl
+          from scipy.linalg import expm
+
+          if len(sys.argv) != 3:
+              raise SystemExit(
+                  "usage: step_f5f_replay.py <haswell|sandybridge> <degree>"
+              )
+          label = sys.argv[1]
+          degree = int(sys.argv[2])
+          expected_arch = {
+              "haswell": "Haswell",
+              "sandybridge": "Sandybridge",
+          }[label]
+
+          info = threadpoolctl.threadpool_info()
+          archs = sorted({
+              str(item.get("architecture", ""))
+              for item in info
+              if item.get("internal_api") == "openblas"
+          })
+          if not archs or not all(
+              a.lower() == expected_arch.lower() for a in archs
+          ):
+              raise SystemExit(
+                  f"requested {expected_arch}, observed architectures={archs}"
+              )
+
+          source = np.load(f"step_f5f_haswell_degree{degree}.npz")
+          s = source["s"]
+          generator = source["generator"]
+          y0 = source["y0"]
+          phi = source["phi"]
+
+          exponentials = []
+          coefficients = []
+          concentrations = []
+          for sj, gj in zip(s, generator):
+              ej = expm(gj*4.0)
+              cj = ej @ (y0.astype(np.complex128)/sj)
+              qj = complex(phi @ cj)
+              exponentials.append(ej)
+              coefficients.append(cj)
+              concentrations.append(qj)
+
+          np.savez(
+              f"step_f5f_replay_{label}_degree{degree}.npz",
+              s=s,
+              generator=generator,
+              exponential=np.asarray(exponentials, dtype=np.complex128),
+              coefficients=np.asarray(coefficients, dtype=np.complex128),
+              concentration=np.asarray(concentrations, dtype=np.complex128),
+          )
+          print(json.dumps({
+              "label": label,
+              "degree": degree,
+              "requested_coretype": os.environ.get("OPENBLAS_CORETYPE"),
+              "observed_openblas_architectures": archs,
+              "n": int(s.size),
+          }, indent=2, sort_keys=True))
+          PY
+
+          cat > step_f5f_compare.py <<'PY'
+          import json
+          import platform
+          import sys
+          from pathlib import Path
+
+          import numpy as np
+
+          def compare_array(a, b):
+              a = np.asarray(a)
+              b = np.asarray(b)
+              d = np.abs(a-b)
+              return {
+                  "shape": list(a.shape),
+                  "byte_identical": bool(
+                      a.tobytes(order="C") == b.tobytes(order="C")
+                  ),
+                  "max_abs_difference": float(np.max(d)) if d.size else 0.0,
+                  "l2_difference": float(np.linalg.norm((a-b).ravel())),
+                  "different_elements": int(np.count_nonzero(a != b)),
+              }
+
+          has_json = json.loads(Path("step_f5f_haswell.json").read_text())
+          san_json = json.loads(Path("step_f5f_sandybridge.json").read_text())
+
+          result = {
+              "schema": "gilttpy.step-f5f.blas-stage-localization.comparison.v1",
+              "python": platform.python_version(),
+              "haswell_architectures":
+                  has_json["observed_openblas_architectures"],
+              "sandybridge_architectures":
+                  san_json["observed_openblas_architectures"],
+              "assembly_sha256_equal":
+                  has_json["assembly_sha256"] == san_json["assembly_sha256"],
+              "degrees": {},
+          }
+
+          for degree in (26, 28):
+              h = np.load(f"step_f5f_haswell_degree{degree}.npz")
+              s = np.load(f"step_f5f_sandybridge_degree{degree}.npz")
+              rh = np.load(f"step_f5f_replay_haswell_degree{degree}.npz")
+              rs = np.load(f"step_f5f_replay_sandybridge_degree{degree}.npz")
+
+              result["degrees"][str(degree)] = {
+                  "contour_s": compare_array(h["s"], s["s"]),
+                  "solve_stage_generator": compare_array(
+                      h["generator"], s["generator"]
+                  ),
+                  "full_path_exponential": compare_array(
+                      h["exponential"], s["exponential"]
+                  ),
+                  "full_path_coefficients": compare_array(
+                      h["coefficients"], s["coefficients"]
+                  ),
+                  "full_path_concentration": compare_array(
+                      h["concentration"], s["concentration"]
+                  ),
+                  "expm_replay_same_generator_exponential": compare_array(
+                      rh["exponential"], rs["exponential"]
+                  ),
+                  "expm_replay_same_generator_coefficients": compare_array(
+                      rh["coefficients"], rs["coefficients"]
+                  ),
+                  "expm_replay_same_generator_concentration": compare_array(
+                      rh["concentration"], rs["concentration"]
+                  ),
+                  "haswell_degree_summary": next(
+                      x for x in has_json["degree_summary"]
+                      if x["degree"] == degree
+                  ),
+                  "sandybridge_degree_summary": next(
+                      x for x in san_json["degree_summary"]
+                      if x["degree"] == degree
+                  ),
+              }
+
+          out = Path(
+              f"step_f5f_comparison_py"
+              f"{sys.version_info.major}{sys.version_info.minor}.json"
+          )
+          out.write_text(
+              json.dumps(result, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(result, indent=2, sort_keys=True))
+          PY
+
+      - name: Trace with Haswell kernels
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Haswell python step_f5f_trace.py haswell
+
+      - name: Trace with Sandybridge kernels
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Sandybridge python step_f5f_trace.py sandybridge
+
+      - name: Replay identical Haswell generators under Haswell kernels
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Haswell python step_f5f_replay.py haswell 26
+          OPENBLAS_CORETYPE=Haswell python step_f5f_replay.py haswell 28
+
+      - name: Replay identical Haswell generators under Sandybridge kernels
+        shell: bash
+        run: |
+          OPENBLAS_CORETYPE=Sandybridge python step_f5f_replay.py sandybridge 26
+          OPENBLAS_CORETYPE=Sandybridge python step_f5f_replay.py sandybridge 28
+
+      - name: Compare stages
+        shell: bash
+        run: |
+          python step_f5f_compare.py
+
+      - name: Upload STEP F5F evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step-f5f-ubuntu-py${{ matrix.python }}
+          path: |
+            step_f5f_*.json
+            step_f5f_*.npz
+          if-no-files-found: error
